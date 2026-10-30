@@ -1,0 +1,41 @@
+{
+  "generator": "ApexStudio",
+  "projectId": "stockham-tags",
+  "version": "1.0.0",
+  "runtime": {
+    "node": ">=20",
+    "python": ">=3.11",
+    "browsers": [
+      "Chrome/Edge 110+",
+      "Safari 16.4+ (iOS/iPadOS)",
+      "Firefox 115+"
+    ]
+  },
+  "databases": {
+    "sqlite": ">=3.35",
+    "postgres": ">=13 (tested 16)"
+  },
+  "containers": {
+    "docker": ">=24",
+    "compose": ">=2.24 (uses !reset/!override)",
+    "kubernetes": ">=1.27"
+  },
+  "viewports": {
+    "phone": "360-767px",
+    "tablet": "768-1023px (2-column list)",
+    "desktop": ">=1024px (list + detail)"
+  },
+  "apis": {
+    "emachine": {
+      "endpoint": "GET /datamodel/api/model_query?query=<base64 SQL>",
+      "auth": "Bearer"
+    }
+  },
+  "testedWith": {
+    "node": "22",
+    "python": "3.13",
+    "postgres": "16.x",
+    "sqlite": "3.4x",
+    "chromium": "Playwright 1.63"
+  }
+}

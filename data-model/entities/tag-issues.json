@@ -1,0 +1,36 @@
+{
+  "name": "TagIssue",
+  "table": "tag_issues",
+  "description": "An issue the tag addresses.",
+  "primaryKey": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "type": "id",
+      "nullable": false,
+      "description": "Surrogate key"
+    },
+    {
+      "name": "tag_id",
+      "type": "id",
+      "nullable": false,
+      "description": "Owning tag"
+    },
+    {
+      "name": "position",
+      "type": "integer",
+      "nullable": false,
+      "description": "Order within the tag",
+      "default": 0
+    },
+    {
+      "name": "text",
+      "type": "string",
+      "length": 1000,
+      "nullable": false,
+      "description": "Issue text"
+    }
+  ]
+}

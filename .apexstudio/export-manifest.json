@@ -1,0 +1,34 @@
+{
+  "generator": "ApexStudio",
+  "projectId": "stockham-tags",
+  "exportFormat": "apexstudio-project",
+  "exportFormatVersion": "1.0",
+  "version": "1.0.0",
+  "exportedAt": "2026-10-30T00:00:00Z",
+  "includes": [
+    "frontend",
+    "backend",
+    "data-model",
+    "database",
+    "config",
+    "api",
+    "tests",
+    "infrastructure",
+    "scripts",
+    "docs"
+  ],
+  "excludes": [
+    "node_modules",
+    ".venv",
+    "dist",
+    "data",
+    "backups",
+    ".env",
+    "**/.env"
+  ],
+  "integrity": {
+    "hashes": ".apexstudio/artifact-hashes.json",
+    "verify": "scripts/validate-export.sh"
+  },
+  "secrets": "none (only *.example environment files are included)"
+}

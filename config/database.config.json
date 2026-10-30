@@ -1,0 +1,20 @@
+{
+  "$schema": "./config.schema.json#/definitions/database",
+  "dialect": "sqlite",
+  "sqlite": {
+    "path": "../data/stockham-tags.db",
+    "journalMode": "WAL",
+    "busyTimeoutMs": 5000
+  },
+  "postgres": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "stockham_tags",
+    "user": "stockham",
+    "sslMode": "prefer",
+    "poolSize": 5,
+    "maxOverflow": 10
+  },
+  "migrationsDir": "../database/migrations",
+  "runMigrationsOnStartup": true
+}

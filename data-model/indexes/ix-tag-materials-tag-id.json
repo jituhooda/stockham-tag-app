@@ -1,0 +1,9 @@
+{
+  "name": "ix_tag_materials_tag_id",
+  "entity": "MaterialLine",
+  "table": "tag_materials",
+  "fields": [
+    "tag_id"
+  ],
+  "unique": false
+}

@@ -1,0 +1,9 @@
+{
+  "name": "ck_tag_labor_double_hours",
+  "entity": "LaborLine",
+  "type": "check",
+  "fields": [
+    "double_hours"
+  ],
+  "expression": "double_hours >= 0"
+}

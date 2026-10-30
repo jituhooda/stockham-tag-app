@@ -1,0 +1,2142 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Stockham Tags API",
+    "description": "Change-order tags for Stockham Construction. Reference data is read from eMachine; tags, cost lines, attachments and signatures are stored in this service's database.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health/live": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness probe",
+        "operationId": "live_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Live Health Live Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Readiness probe (database reachable)",
+        "operationId": "ready_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Ready Health Ready Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Public app configuration (branding, features)",
+        "operationId": "public_config_api_v1_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Public Config Api V1 Config Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "The signed-in user and their permissions",
+        "operationId": "me_api_v1_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/employees": {
+      "get": {
+        "tags": [
+          "master data"
+        ],
+        "summary": "Active employees",
+        "operationId": "employees_api_v1_master_employees_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Employee"
+                  },
+                  "type": "array",
+                  "title": "Response Employees Api V1 Master Employees Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/materials": {
+      "get": {
+        "tags": [
+          "master data"
+        ],
+        "summary": "Material descriptions",
+        "operationId": "materials_api_v1_master_materials_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MasterItem"
+                  },
+                  "type": "array",
+                  "title": "Response Materials Api V1 Master Materials Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/equipment": {
+      "get": {
+        "tags": [
+          "master data"
+        ],
+        "summary": "Equipment descriptions",
+        "operationId": "equipment_api_v1_master_equipment_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MasterItem"
+                  },
+                  "type": "array",
+                  "title": "Response Equipment Api V1 Master Equipment Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/expenses": {
+      "get": {
+        "tags": [
+          "master data"
+        ],
+        "summary": "Expense types",
+        "operationId": "expenses_api_v1_master_expenses_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MasterItem"
+                  },
+                  "type": "array",
+                  "title": "Response Expenses Api V1 Master Expenses Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/trades": {
+      "get": {
+        "tags": [
+          "master data"
+        ],
+        "summary": "Labor trades (from tag_labor_rates)",
+        "operationId": "trades_api_v1_master_trades_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Trade"
+                  },
+                  "type": "array",
+                  "title": "Response Trades Api V1 Master Trades Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/jobs": {
+      "get": {
+        "tags": [
+          "master data"
+        ],
+        "summary": "Jobs for the given divisions",
+        "operationId": "jobs_api_v1_master_jobs_get",
+        "parameters": [
+          {
+            "name": "division",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "title": "Division"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Job"
+                  },
+                  "title": "Response Jobs Api V1 Master Jobs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/division": {
+      "get": {
+        "tags": [
+          "master data"
+        ],
+        "summary": "Divisions an employee belongs to",
+        "operationId": "division_api_v1_master_division_get",
+        "parameters": [
+          {
+            "name": "employee",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "title": "Employee"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Division"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/issues": {
+      "get": {
+        "tags": [
+          "master data"
+        ],
+        "summary": "Issues a tag can be linked to (if configured)",
+        "operationId": "issues_api_v1_master_issues_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Issue"
+                  },
+                  "type": "array",
+                  "title": "Response Issues Api V1 Master Issues Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tags": {
+      "get": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "All tags, newest first",
+        "operationId": "list_tags_api_v1_tags_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Create a draft tag",
+        "operationId": "create_tag_api_v1_tags_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tags/{tag_id}": {
+      "get": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "One tag with its lines, issues, signature and files",
+        "operationId": "get_tag_api_v1_tags__tag_id__get",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Replace a tag's content (an eMachine tag is copied in first; the response carries its new id)",
+        "operationId": "update_tag_api_v1_tags__tag_id__put",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Delete a draft or rejected tag",
+        "operationId": "delete_tag_api_v1_tags__tag_id__delete",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      }
+    },
+    "/api/v1/tags/{tag_id}/submit": {
+      "post": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Sign in person (status Signed) or send for signature (status Submitted)",
+        "operationId": "submit_tag_api_v1_tags__tag_id__submit_post",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      }
+    },
+    "/api/v1/tags/{tag_id}/approve": {
+      "post": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Mark a submitted/signed tag Approved",
+        "operationId": "approve_tag_api_v1_tags__tag_id__approve_post",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      }
+    },
+    "/api/v1/tags/{tag_id}/reject": {
+      "post": {
+        "tags": [
+          "tags"
+        ],
+        "summary": "Send a tag back as Rejected (editable again)",
+        "operationId": "reject_tag_api_v1_tags__tag_id__reject_post",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        }
+      }
+    },
+    "/api/v1/tags/{tag_id}/attachments": {
+      "post": {
+        "tags": [
+          "attachments"
+        ],
+        "summary": "Upload a photo or document",
+        "operationId": "upload_api_v1_tags__tag_id__attachments_post",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_api_v1_tags__tag_id__attachments_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/v1/attachments/{attachment_id}": {
+      "get": {
+        "tags": [
+          "attachments"
+        ],
+        "summary": "Download an attachment",
+        "operationId": "download_api_v1_attachments__attachment_id__get",
+        "parameters": [
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Attachment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/v1/tags/{tag_id}/attachments/{attachment_id}": {
+      "delete": {
+        "tags": [
+          "attachments"
+        ],
+        "summary": "Delete an attachment",
+        "operationId": "remove_api_v1_tags__tag_id__attachments__attachment_id__delete",
+        "parameters": [
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          },
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Attachment Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/v1/approvers": {
+      "get": {
+        "tags": [
+          "approvers"
+        ],
+        "summary": "Approvers known for a customer",
+        "operationId": "list_approvers_api_v1_approvers_get",
+        "parameters": [
+          {
+            "name": "customer",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "title": "Customer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Approver"
+                  },
+                  "title": "Response List Approvers Api V1 Approvers Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "approvers"
+        ],
+        "summary": "Add (or update) an approver",
+        "operationId": "add_approver_api_v1_approvers_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproverCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Approver"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Approver": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "customer": {
+            "type": "string",
+            "title": "Customer"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "customer",
+          "name"
+        ],
+        "title": "Approver"
+      },
+      "ApproverCreate": {
+        "properties": {
+          "customer": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Customer"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Email",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer",
+          "name"
+        ],
+        "title": "ApproverCreate"
+      },
+      "Attachment": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "contentType": {
+            "type": "string",
+            "title": "Contenttype"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "contentType",
+          "size",
+          "url",
+          "createdAt"
+        ],
+        "title": "Attachment"
+      },
+      "Body_upload_api_v1_tags__tag_id__attachments_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_api_v1_tags__tag_id__attachments_post"
+      },
+      "Counts": {
+        "properties": {
+          "labor": {
+            "type": "integer",
+            "title": "Labor",
+            "default": 0
+          },
+          "material": {
+            "type": "integer",
+            "title": "Material",
+            "default": 0
+          },
+          "equipment": {
+            "type": "integer",
+            "title": "Equipment",
+            "default": 0
+          },
+          "expense": {
+            "type": "integer",
+            "title": "Expense",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "Counts"
+      },
+      "Division": {
+        "properties": {
+          "employee": {
+            "type": "string",
+            "title": "Employee"
+          },
+          "divisions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Divisions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "employee",
+          "divisions"
+        ],
+        "title": "Division"
+      },
+      "Employee": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "employee": {
+            "type": "string",
+            "title": "Employee"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "division": {
+            "type": "string",
+            "title": "Division",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "employee",
+          "name"
+        ],
+        "title": "Employee"
+      },
+      "EquipmentLine": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Description",
+            "default": ""
+          },
+          "qty": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Qty",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "EquipmentLine"
+      },
+      "ExpenseLine": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Description",
+            "default": ""
+          },
+          "amount": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Amount",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ExpenseLine"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Issue": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "title": "Issue"
+      },
+      "Job": {
+        "properties": {
+          "jobNo": {
+            "type": "string",
+            "title": "Jobno"
+          },
+          "jobName": {
+            "type": "string",
+            "title": "Jobname"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "customerId": {
+            "type": "string",
+            "title": "Customerid",
+            "default": ""
+          },
+          "customerName": {
+            "type": "string",
+            "title": "Customername",
+            "default": ""
+          },
+          "address": {
+            "type": "string",
+            "title": "Address",
+            "default": ""
+          },
+          "pmEmail": {
+            "type": "string",
+            "title": "Pmemail",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "jobNo",
+          "jobName",
+          "label"
+        ],
+        "title": "Job"
+      },
+      "LaborLine": {
+        "properties": {
+          "employeeId": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Employeeid",
+            "default": ""
+          },
+          "employeeName": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Employeename",
+            "default": ""
+          },
+          "trade": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Trade",
+            "default": ""
+          },
+          "regular": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Regular",
+            "default": 0
+          },
+          "overtime": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Overtime",
+            "default": 0
+          },
+          "doubleTime": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Doubletime",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "LaborLine"
+      },
+      "MasterItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "defaultAmount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Defaultamount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "MasterItem"
+      },
+      "MaterialLine": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Description",
+            "default": ""
+          },
+          "qty": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Qty",
+            "default": 0
+          },
+          "length": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Length"
+          }
+        },
+        "type": "object",
+        "title": "MaterialLine"
+      },
+      "Me": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "role",
+          "permissions"
+        ],
+        "title": "Me"
+      },
+      "Problem": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "Problem"
+      },
+      "Signature": {
+        "properties": {
+          "approver": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Approver",
+            "default": ""
+          },
+          "mode": {
+            "$ref": "#/components/schemas/SignatureMode",
+            "default": "in-person"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Email",
+            "default": ""
+          },
+          "image": {
+            "type": "string",
+            "title": "Image",
+            "default": ""
+          },
+          "signedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signedat"
+          }
+        },
+        "type": "object",
+        "title": "Signature"
+      },
+      "SignatureMode": {
+        "type": "string",
+        "enum": [
+          "in-person",
+          "send"
+        ],
+        "title": "SignatureMode"
+      },
+      "SubmitRequest": {
+        "properties": {
+          "approver": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Approver"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/SignatureMode"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Email",
+            "default": ""
+          },
+          "image": {
+            "type": "string",
+            "title": "Image",
+            "description": "PNG data URL; required when mode is in-person",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "approver",
+          "mode"
+        ],
+        "title": "SubmitRequest"
+      },
+      "TagDetail": {
+        "properties": {
+          "tagNumber": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Tagnumber",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "Description",
+            "default": ""
+          },
+          "tagDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tagdate"
+          },
+          "isPremium": {
+            "type": "boolean",
+            "title": "Ispremium",
+            "default": false
+          },
+          "jobNo": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Jobno",
+            "default": ""
+          },
+          "jobName": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Jobname",
+            "default": ""
+          },
+          "customerId": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Customerid",
+            "default": ""
+          },
+          "customerName": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Customername",
+            "default": ""
+          },
+          "pmEmail": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Pmemail",
+            "default": ""
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Address",
+            "default": ""
+          },
+          "labor": {
+            "items": {
+              "$ref": "#/components/schemas/LaborLine"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Labor"
+          },
+          "materials": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialLine"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Materials"
+          },
+          "equipment": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentLine"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Equipment"
+          },
+          "expenses": {
+            "items": {
+              "$ref": "#/components/schemas/ExpenseLine"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Expenses"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Issues"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "local",
+              "emachine"
+            ],
+            "title": "Source"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "editable": {
+            "type": "boolean",
+            "title": "Editable"
+          },
+          "createdBy": {
+            "type": "string",
+            "title": "Createdby",
+            "default": ""
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updatedat"
+          },
+          "submittedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submittedat"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/Signature"
+          },
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/Attachment"
+            },
+            "type": "array",
+            "title": "Attachments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "status",
+          "editable"
+        ],
+        "title": "TagDetail"
+      },
+      "TagList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TagSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "TagList"
+      },
+      "TagSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "local",
+              "emachine"
+            ],
+            "title": "Source"
+          },
+          "tagNumber": {
+            "type": "string",
+            "title": "Tagnumber"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "tagDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tagdate"
+          },
+          "jobNo": {
+            "type": "string",
+            "title": "Jobno"
+          },
+          "jobName": {
+            "type": "string",
+            "title": "Jobname"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updatedat"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/Counts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "tagNumber",
+          "status",
+          "description",
+          "tagDate",
+          "jobNo",
+          "jobName",
+          "updatedAt",
+          "counts"
+        ],
+        "title": "TagSummary"
+      },
+      "TagUpdate": {
+        "properties": {
+          "tagNumber": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Tagnumber",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "Description",
+            "default": ""
+          },
+          "tagDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tagdate"
+          },
+          "isPremium": {
+            "type": "boolean",
+            "title": "Ispremium",
+            "default": false
+          },
+          "jobNo": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Jobno",
+            "default": ""
+          },
+          "jobName": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Jobname",
+            "default": ""
+          },
+          "customerId": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Customerid",
+            "default": ""
+          },
+          "customerName": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Customername",
+            "default": ""
+          },
+          "pmEmail": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Pmemail",
+            "default": ""
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Address",
+            "default": ""
+          },
+          "labor": {
+            "items": {
+              "$ref": "#/components/schemas/LaborLine"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Labor"
+          },
+          "materials": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialLine"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Materials"
+          },
+          "equipment": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentLine"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Equipment"
+          },
+          "expenses": {
+            "items": {
+              "$ref": "#/components/schemas/ExpenseLine"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Expenses"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Issues"
+          }
+        },
+        "type": "object",
+        "title": "TagUpdate",
+        "description": "Full replacement of a tag's editable content (status and signature excluded)."
+      },
+      "Trade": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "title": "Trade"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Required when authMode is 'token'"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Same origin as the web app"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    },
+    {}
+  ]
+}

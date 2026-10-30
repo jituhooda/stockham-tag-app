@@ -1,0 +1,9 @@
+{
+  "name": "ix_tags_updated_at",
+  "entity": "Tag",
+  "table": "tags",
+  "fields": [
+    "updated_at"
+  ],
+  "unique": false
+}

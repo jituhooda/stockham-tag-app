@@ -1,0 +1,44 @@
+{
+  "name": "Approver",
+  "table": "approvers",
+  "description": "Customer contacts who approve tags, remembered per customer.",
+  "primaryKey": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "type": "id",
+      "nullable": false,
+      "description": "Surrogate key"
+    },
+    {
+      "name": "customer",
+      "type": "string",
+      "length": 255,
+      "nullable": false,
+      "description": "Customer name"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "length": 255,
+      "nullable": false,
+      "description": "Approver name"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "length": 255,
+      "nullable": false,
+      "description": "Approver email",
+      "default": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "nullable": false,
+      "description": "Creation time (UTC)"
+    }
+  ]
+}

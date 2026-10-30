@@ -1,0 +1,31 @@
+groups:
+  - name: stockham-tags
+    rules:
+      - alert: TagsApiDown
+        expr: up{job="stockham-tags-api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: Stockham Tags API is not responding
+      - alert: TagsApiErrorRate
+        expr: |
+          sum(rate(stockham_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(stockham_http_requests_total[5m])), 1e-9) > 0.05
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: More than 5% of API requests are failing
+      - alert: EmachineUnavailable
+        expr: sum(rate(stockham_http_requests_total{route=~"/api/v1/master/.*",status="502"}[10m])) > 0
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: eMachine reference data has been unreachable for 15 minutes
+      - alert: TagsApiSlow
+        expr: |
+          sum(rate(stockham_http_request_duration_seconds_sum[5m]))
+            / clamp_min(sum(rate(stockham_http_request_duration_seconds_count[5m])), 1e-9) > 1.5
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: Average API response time is above 1.5 s

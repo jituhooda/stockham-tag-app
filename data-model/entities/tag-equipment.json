@@ -1,0 +1,46 @@
+{
+  "name": "EquipmentLine",
+  "table": "tag_equipment",
+  "description": "Equipment used on a tag.",
+  "primaryKey": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "type": "id",
+      "nullable": false,
+      "description": "Surrogate key"
+    },
+    {
+      "name": "tag_id",
+      "type": "id",
+      "nullable": false,
+      "description": "Owning tag"
+    },
+    {
+      "name": "position",
+      "type": "integer",
+      "nullable": false,
+      "description": "Order within the tag",
+      "default": 0
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "length": 255,
+      "nullable": false,
+      "description": "Equipment (from equipment_master or free text)",
+      "default": ""
+    },
+    {
+      "name": "qty",
+      "type": "decimal",
+      "precision": 12,
+      "scale": 2,
+      "nullable": false,
+      "description": "Quantity",
+      "default": 0
+    }
+  ]
+}

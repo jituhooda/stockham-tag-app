@@ -1,0 +1,13 @@
+{
+  "name": "MaterialLine_tag_id",
+  "from": {
+    "entity": "MaterialLine",
+    "field": "tag_id"
+  },
+  "to": {
+    "entity": "Tag",
+    "field": "id"
+  },
+  "cardinality": "many-to-one",
+  "onDelete": "CASCADE"
+}

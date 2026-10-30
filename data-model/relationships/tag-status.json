@@ -1,0 +1,13 @@
+{
+  "name": "Tag_status",
+  "from": {
+    "entity": "Tag",
+    "field": "status"
+  },
+  "to": {
+    "entity": "TagStatus",
+    "field": "code"
+  },
+  "cardinality": "many-to-one",
+  "onDelete": "RESTRICT"
+}

@@ -1,0 +1,70 @@
+{
+  "generator": "ApexStudio",
+  "projectId": "stockham-tags",
+  "generatedAt": "2026-10-30T00:00:00Z",
+  "version": "1.0.0",
+  "inputs": [
+    {
+      "type": "design",
+      "description": "Mobile mockups: tag list, cost sub-screens (labor, material, expenses, equipment), issues, files, sign"
+    },
+    {
+      "type": "api",
+      "description": "eMachine model_query endpoint and the queries in config/integrations.config.json"
+    },
+    {
+      "type": "structure",
+      "description": "ApexStudio export layout"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "frontend/",
+      "kind": "application",
+      "regenerate": false
+    },
+    {
+      "path": "backend/",
+      "kind": "application",
+      "regenerate": false
+    },
+    {
+      "path": "api/openapi.json",
+      "kind": "contract",
+      "regenerate": true,
+      "command": "cd backend && uv run python -m apexapp.utils.export_openapi"
+    },
+    {
+      "path": "api/openapi.yaml",
+      "kind": "contract",
+      "regenerate": true,
+      "command": "cd backend && uv run python -m apexapp.utils.export_openapi"
+    },
+    {
+      "path": "api/postman-collection.json",
+      "kind": "contract",
+      "regenerate": true,
+      "command": "cd backend && uv run python -m apexapp.utils.export_openapi"
+    },
+    {
+      "path": "database/schema/",
+      "kind": "schema-snapshot",
+      "regenerate": true,
+      "command": "scripts/db-verify.sh --dump"
+    },
+    {
+      "path": ".apexstudio/artifact-hashes.json",
+      "kind": "integrity",
+      "regenerate": true,
+      "command": "scripts/validate-export.sh --update-hashes"
+    }
+  ],
+  "handEdited": [
+    "frontend/",
+    "backend/",
+    "data-model/",
+    "config/",
+    "database/migrations/",
+    "docs/"
+  ]
+}

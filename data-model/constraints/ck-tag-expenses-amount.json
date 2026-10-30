@@ -1,0 +1,9 @@
+{
+  "name": "ck_tag_expenses_amount",
+  "entity": "ExpenseLine",
+  "type": "check",
+  "fields": [
+    "amount"
+  ],
+  "expression": "amount >= 0"
+}

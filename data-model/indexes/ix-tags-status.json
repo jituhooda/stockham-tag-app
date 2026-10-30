@@ -1,0 +1,9 @@
+{
+  "name": "ix_tags_status",
+  "entity": "Tag",
+  "table": "tags",
+  "fields": [
+    "status"
+  ],
+  "unique": false
+}

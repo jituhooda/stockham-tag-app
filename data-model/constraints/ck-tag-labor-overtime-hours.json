@@ -1,0 +1,9 @@
+{
+  "name": "ck_tag_labor_overtime_hours",
+  "entity": "LaborLine",
+  "type": "check",
+  "fields": [
+    "overtime_hours"
+  ],
+  "expression": "overtime_hours >= 0"
+}
