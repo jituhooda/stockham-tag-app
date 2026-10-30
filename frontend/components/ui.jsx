@@ -3,7 +3,7 @@
  * toasts, the signature pad and the Stockham logo.
  */
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { IconCheckCircle, IconChevronDown, IconSave, IconSearch } from './icons';
+import { IconCheck, IconCheckCircle, IconChevronDown, IconClose, IconSave, IconSearch } from './icons';
 
 export const cx = (...c) => c.filter(Boolean).join(' ');
 
@@ -89,7 +89,10 @@ export function SearchSelect({
 
   useEffect(() => setActive(0), [query]);
 
-  const choose = (o) => {
+  const choose = (o, e) => {
+    // Inside a <label>, the click would be forwarded to the input, refocusing it and reopening the list.
+    e?.preventDefault();
+    e?.stopPropagation();
     onChange({ value: o.value, label: o.label, sub: o.sub });
     setOpen(false);
     setQuery('');
@@ -151,7 +154,7 @@ export function SearchSelect({
               className={cx('combo__opt', i === active && 'is-active', o.label === value && 'is-selected')}
               onPointerEnter={() => setActive(i)}
               onPointerDown={(e) => e.preventDefault()}
-              onClick={() => choose(o)}
+              onClick={(e) => choose(o, e)}
             >
               {o.custom ? <>Use “<strong>{o.label}</strong>”</> : o.label}
               {o.sub && <span className="combo__sub">{o.sub}</span>}
@@ -159,6 +162,58 @@ export function SearchSelect({
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Confirm */
+
+/** Centered yes/no question with ✗ and ✓ (Esc cancels). `onConfirm` may be async; the dialog waits for it. */
+export function ConfirmDialog({ text, onCancel, onConfirm }) {
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && !busy && onCancel();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [busy, onCancel]);
+  const yes = async () => {
+    setBusy(true);
+    try {
+      await onConfirm();
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="dialog-backdrop" onPointerDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
+      <div className="dialog dialog--confirm" role="alertdialog" aria-modal="true" aria-label={text} aria-busy={busy}>
+        <p className="dialog__text">{text}</p>
+        <div className="dialog__actions">
+          <button className="dialog__btn dialog__btn--no" aria-label="No" disabled={busy} onClick={onCancel}><IconClose size={36} /></button>
+          <button className="dialog__btn dialog__btn--yes" aria-label="Yes, delete" disabled={busy} onClick={yes}>
+            {busy ? <span className="dialog__spinner" role="status" aria-label="Deleting" /> : <IconCheck size={36} />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Alert */
+
+/** Centered message with a single OK button (Esc also closes it). */
+export function AlertDialog({ text, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="alert-backdrop">
+      <div className="alert" role="alertdialog" aria-modal="true" aria-label="Notice">
+        <p>{text}</p>
+        <button className="alert__ok" autoFocus onClick={onClose}>OK</button>
+      </div>
     </div>
   );
 }

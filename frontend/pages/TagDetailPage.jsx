@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Link, NavLink, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { IconBack, IconClose, IconMenu } from '../components/icons';
 import { MenuDrawer } from '../components/MenuDrawer';
-import { Spinner, StatusPill, useToast } from '../components/ui';
+import { AlertDialog, Spinner, useToast } from '../components/ui';
 import { useLayout } from '../hooks/useLayout';
 import { useTagEditor } from '../hooks/useTagEditor';
 import { useUnsavedChangesGuard } from '../hooks/useUnsavedChangesGuard';
@@ -34,7 +34,8 @@ export function TagDetailPage() {
 function TagDetail({ id }) {
   const { tab = 'details', sub } = useParams();
   const { refresh } = useTagList();
-  const { state } = useLocation();
+  const { state, pathname } = useLocation();
+  const [warning, setWarning] = useState(state?.warning || '');
   const editor = useTagEditor(id, state?.job);
   const { split } = useLayout();
   const [menu, setMenu] = useState(false);
@@ -105,16 +106,13 @@ function TagDetail({ id }) {
             <span>{[tag.jobNo, tag.jobName].filter(Boolean).join(' : ') || 'No job selected'}</span>
           </div>
         ) : (
-          <>
-            <div className="detail-head__title">
-              <h2>
-                {tag.tagNumber}
-                {editor.dirty && <span className="unsaved-dot" title="Unsaved changes" />}
-              </h2>
-              <span>{[tag.jobName, tag.jobNo].filter(Boolean).join(' ') || 'No job selected'}</span>
-            </div>
-            <StatusPill status={tag.status} />
-          </>
+          <div className="detail-head__title">
+            <h2>
+              {tag.tagNumber}
+              {editor.dirty && <span className="unsaved-dot" title="Unsaved changes" />}
+            </h2>
+            <span>{tag.jobName || 'No job selected'}</span>
+          </div>
         )}
         {!split && (
           <button className="icon-btn icon-btn--light icon-btn--dim" aria-label="Open menu" onClick={() => setMenu(true)}>
@@ -135,6 +133,16 @@ function TagDetail({ id }) {
 
       <Component {...props} />
       <MenuDrawer open={menu} onClose={() => setMenu(false)} />
+      {warning && (
+        <AlertDialog
+          text={warning}
+          onClose={() => {
+            setWarning('');
+            // Drop it from history so a reload doesn't show it again.
+            navigate(pathname, { replace: true, state: { job: state?.job } });
+          }}
+        />
+      )}
     </div>
   );
 }

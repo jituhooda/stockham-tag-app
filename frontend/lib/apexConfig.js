@@ -33,13 +33,13 @@ export const apexConfig = {
      */
     writesEnabled: flag(env.VITE_EMACHINE_WRITES, false),
   },
-  /** Autodesk Forma project lookup (called directly from the browser). The token is short-lived; see .env.example. */
+  /** Autodesk Forma project lookup (called directly from the browser). Its short-lived token is fetched from tokenUrl on demand. */
   forma: {
     apiBase: forma.apiBase,
     accountId: forma.accountId,
     projectsPath: forma.projectsPath,
     jobFilter: forma.jobFilter,
-    token: bearer(env.VITE_FORMA_TOKEN),
+    tokenUrl: (env.VITE_FORMA_TOKEN_URL || forma.tokenUrl || '').trim(),
   },
   editableStatuses: appConfig.editableStatuses || ['Draft', 'Rejected'],
   storageKeys: {

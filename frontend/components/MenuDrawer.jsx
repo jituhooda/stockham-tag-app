@@ -69,7 +69,7 @@ export function MenuDrawer({ open, onClose }) {
 
         <footer className="drawer__foot muted small">
           <div>Signed in as {user.name}</div>
-          <div>{writesEnabled ? 'Saving to eMachine is on' : 'Read-only mode (saving to eMachine is off)'}</div>
+          {!writesEnabled && <div>Saving to eMachine is off</div>}
           {config.branding.companyName} · v{config.app.version}
         </footer>
       </aside>

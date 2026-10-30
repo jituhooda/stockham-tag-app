@@ -1,5 +1,23 @@
 # Security
 
+## TODO: secure the Autodesk token service
+
+**Status: open (testing only).** Before real users, do this:
+
+- `GET https://stockham.emachine.ai/stockham/token` (set as `forma.tokenUrl` in
+  `config/integrations.config.json`) returns `{ access_token, expires_at }` to **anyone**: no authentication, and
+  CORS allows any origin (`access-control-allow-origin: *`). Anyone who finds the URL can get an Autodesk token
+  with the app's permissions (it reads projects in the Stockham account).
+- Secure it on the service side: require the user's eMachine bearer token (or another login), and/or limit the
+  allowed origins to this app's address. Keep the token's Autodesk scopes as narrow as possible.
+- Then update `fetchToken()` in `frontend/lib/forma.js` to send the credentials, and add this app's origin to the
+  service's CORS allow-list.
+- Also consider moving the whole Forma check behind eMachine or this site's proxy, so the Autodesk token never
+  reaches the browser at all. Today the browser holds it in memory for up to about an hour.
+
+Also open: the eMachine token in `frontend/.env.local` (`VITE_EMACHINE_TOKEN`) is bundled into the page and
+visible to everyone who can load it; see "Tokens" below.
+
 ## Tokens
 
 - The app sends the user's eMachine bearer token with every request. It lives in

@@ -1,6 +1,6 @@
 /* Stockham Tags service worker: lets the app install and open offline (app shell only).
  * eMachine data (/datamodel) is never cached; it is live data and carries the token. */
-const CACHE = 'stockham-shell-v1';
+const CACHE = 'stockham-shell-v2';
 const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
@@ -34,16 +34,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Built assets are content-hashed, so cache-first is safe.
+  // Everything else (CSS, JS, images): network first so edits and new deploys always show up;
+  // the cache is only a fallback when offline.
   if (url.pathname.startsWith('/assets/') || SHELL.includes(url.pathname)) {
     event.respondWith(
-      caches.match(request).then((hit) => hit || fetch(request).then((res) => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(request, copy));
-        }
-        return res;
-      })),
+      fetch(request)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(request, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(request)),
     );
   }
 });

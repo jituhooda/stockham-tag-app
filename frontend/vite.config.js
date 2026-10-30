@@ -13,6 +13,6 @@ export default defineConfig(({ mode }) => {
     server: { host: true, port: 5173, proxy, fs: { allow: ['..'] }, allowedHosts: ['aziro.ngrok.app'] },
     preview: { host: true, port: 4173, proxy, allowedHosts: ['aziro.ngrok.app'] },
     build: { outDir: 'dist', sourcemap: true },
-    test: { environment: 'node', include: ['tests/**/*.test.{js,jsx}'], env: { VITE_EMACHINE_TOKEN: '', VITE_FORMA_TOKEN: 'test-forma-token' } },
+    test: { environment: 'node', include: ['tests/**/*.test.{js,jsx}'], env: { VITE_EMACHINE_TOKEN: '', VITE_EMACHINE_WRITES: 'false', VITE_FORMA_TOKEN_URL: 'https://token.test/token' } },
   };
 });

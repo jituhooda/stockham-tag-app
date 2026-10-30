@@ -59,11 +59,18 @@ export function useTagEditor(id, initial) {
     }
   }, [form, saved, accept]);
 
+  /** A saved line was deleted in eMachine: forget it everywhere without marking the form changed. */
+  const dropLine = useCallback((kind, lineKey) => {
+    const without = (t) => (t ? { ...t, [kind]: t[kind].filter((l) => l.key !== lineKey) } : t);
+    setForm(without);
+    setSaved(without);
+  }, []);
+
   const discard = useCallback(() => {
     setForm(saved);
     setDirty(false);
     dirtyRef.current = false;
   }, [saved]);
 
-  return { saved, form, dirty, dirtyRef, loading, error, busy, edit, save, discard };
+  return { saved, form, dirty, dirtyRef, loading, error, busy, edit, save, discard, dropLine };
 }

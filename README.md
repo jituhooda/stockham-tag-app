@@ -9,6 +9,18 @@ backend and no database**: it reads and saves eMachine directly.
 | --- | --- | --- |
 | one screen at a time, like the mockups (also works on its side) | tag list on the left, open tag on the right | the same, with roomier forms and a wider list |
 
+> ## ⚠️ TODO before real users: secure the Autodesk token service
+>
+> Adding a tag gets an Autodesk Forma token from **`https://stockham.emachine.ai/stockham/token`**
+> (`forma.tokenUrl` in `config/integrations.config.json`). That endpoint is **public: no login needed**, so
+> anyone who knows the URL can get a working Autodesk token. This is fine for testing only.
+> Before going live, lock it down (require the user's eMachine token or another login, and/or restrict allowed
+> origins) and, if it then needs credentials, update `frontend/lib/forma.js` to send them.
+> Details: [docs/security.md](docs/security.md#todo-secure-the-autodesk-token-service).
+>
+> The eMachine token in `frontend/.env.local` (`VITE_EMACHINE_TOKEN`) has the same problem: it is built into the
+> page for everyone, so keep the app URL private until each person signs in with their own token.
+
 ## Quick start
 
 ```bash
@@ -55,8 +67,9 @@ browser ──▶ nginx (React app) ──/datamodel──▶ eMachine
 | --- | --- |
 | ✅ Tag list, details, labor, material, equipment, expenses | read from eMachine |
 | ✅ Edit details; add and change cost lines | saved to eMachine |
-| 🧪 Create a tag (Add Tag → pick a job) | wired with a best-guess insert; not yet confirmed against eMachine |
-| ⏳ Remove a saved line, files, issues, sign/submit | **disabled** until their eMachine APIs are captured |
+| 🧪 Create a tag (Add Tag → pick a job) | wired to the fields of a captured save; not yet run against live eMachine |
+| ✅ Remove a cost line | asks to confirm, then deletes in eMachine |
+| ⏳ Files, issues, sign/submit | **disabled** until their eMachine APIs are captured |
 
 ## Repository layout
 

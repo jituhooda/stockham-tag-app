@@ -49,6 +49,7 @@ export function newTag() {
     customerName: '',
     pmEmail: '',
     address: '',
+    createdBy: '',
     lastModified: '',
     labor: [],
     materials: [],

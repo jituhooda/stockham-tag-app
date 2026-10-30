@@ -144,11 +144,26 @@ export async function runWrites(requests) {
   for (const r of requests) {
     results.push(await send(r.url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'eml-service': 'True' },
       body: r.body,
     }));
   }
   return results;
+}
+
+/**
+ * Delete one row, the way the existing app does: a `delete from <table> where Id='…'` statement sent through
+ * the model_query GET. `table` must come from the app's own allow-list, never from user input.
+ */
+export async function runDelete(table, id) {
+  const statement = sql('deleteLine', { table, id: sqlString(sqlInt(id)) });
+  // Same bytes as the existing app: base64 without trailing '=' padding.
+  const url = `${cfg.baseUrl}${cfg.queryPath}?query=${encodeURIComponent(encodeQuery(statement).replace(/=+$/, ''))}`;
+  if (!cfg.writesEnabled) {
+    console.info('[read-only] eMachine delete that would have been sent:', url, statement);
+    throw new WritesDisabledError([{ method: 'GET', url, table, statement }]);
+  }
+  await send(url, { method: 'GET', headers: { 'eml-service': 'True' } });
 }
 
 /** Find a new row's Id in an insert response, whatever envelope eMachine uses. */

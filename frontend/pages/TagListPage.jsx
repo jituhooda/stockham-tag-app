@@ -12,7 +12,7 @@ import { useTagList } from '../state/TagListContext';
 const BASE_STATUSES = ['Draft', 'Submitted', 'Signed', 'Approved', 'Rejected'];
 
 export function TagListPage() {
-  const { config } = useApp();
+  const { config, user, settings } = useApp();
   const { items, loading, error, refresh } = useTagList();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('All');
@@ -75,9 +75,9 @@ export function TagListPage() {
       {adding && (
         <NewTagDialog
           onCancel={() => setAdding(false)}
-          onConfirm={(job) => {
+          onConfirm={(job, warning) => {
             setAdding(false);
-            navigate(tagPath(NEW_TAG_ID), { state: { job } });
+            navigate(tagPath(NEW_TAG_ID), { state: { job: { ...job, createdBy: settings.employeeName || user.name }, warning } });
           }}
         />
       )}

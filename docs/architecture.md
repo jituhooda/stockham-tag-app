@@ -34,8 +34,8 @@ database of its own: the browser reads and writes eMachine directly.
 | Edit tag details (description, date, premium, job, PM email, address) | Saves (update `tags`) |
 | Add labor / material / equipment / expense lines | Saves (insert with `tag_id`) |
 | Change existing lines | Saves (update by `Id`, changed fields only) |
-| Remove a saved line | **Not connected**: delete API not captured; trash disabled for saved lines |
-| Create a new tag | Add Tag → pick a job → fill in Details and save. The insert request is a best guess (not captured from the existing app); with saving off it is only logged to the console |
+| Remove a saved line | Trash → "Are you sure to delete?" → `delete from <table> where Id=…` through `model_query` |
+| Create a new tag | Add Tag → pick a job → fill in Details and save. The inserts match a save captured from the existing app: tag first, then its lines. With saving off, the requests are only logged to the console |
 | Files, Issues, Sign/Submit | **Not connected**: APIs not captured; screens explain this |
 
 `tag_equipment` saves use field names inferred from the equipment read query
