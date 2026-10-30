@@ -1,0 +1,6 @@
+[
+  {"Id": 1, "Trade": "Framing", "Rate": 95},
+  {"Id": 2, "Trade": "Drywall", "Rate": 92},
+  {"Id": 3, "Trade": "Taping", "Rate": 90},
+  {"Id": 4, "Trade": "Framing", "Rate": 140}
+]

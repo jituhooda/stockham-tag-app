@@ -1,0 +1,9 @@
+# Development: SQLite, hot reload, auth off.
+APP_ENV=development
+DATABASE_URL=sqlite:///./data/stockham-tags.db
+EMACHINE_MODE=live
+EMACHINE_API_TOKEN=
+AUTH_MODE=none
+LOG_LEVEL=DEBUG
+LOG_FORMAT=text
+CORS_ORIGINS=http://localhost:5173

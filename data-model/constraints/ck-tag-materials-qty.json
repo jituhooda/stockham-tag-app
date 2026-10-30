@@ -1,0 +1,9 @@
+{
+  "name": "ck_tag_materials_qty",
+  "entity": "MaterialLine",
+  "type": "check",
+  "fields": [
+    "qty"
+  ],
+  "expression": "qty >= 0"
+}

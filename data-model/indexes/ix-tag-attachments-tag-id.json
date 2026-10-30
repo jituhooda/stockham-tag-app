@@ -1,0 +1,9 @@
+{
+  "name": "ix_tag_attachments_tag_id",
+  "entity": "Attachment",
+  "table": "tag_attachments",
+  "fields": [
+    "tag_id"
+  ],
+  "unique": false
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "./config.schema.json#/definitions/integrations",
+  "emachine": {
+    "mode": "live",
+    "baseUrl": "https://emachine.instantar.io/datamodel/api/model_query",
+    "timeoutSeconds": 20,
+    "cacheTtlSeconds": 300,
+    "fixturesDir": "../database/fixtures/emachine",
+    "queries": {
+      "employees": "select Id,Employee,CONCAT(first, ' ', last) AS EmployeeName,Status,FEID,Division from employees where status='Active Status'",
+      "expenses": "select * from expenses_master",
+      "materials": "select * from materials_master",
+      "equipment": "select * from equipment_master",
+      "laborRates": "select * from tag_labor_rates",
+      "division": "select Division from employees where EMPLOYEE = {employee}",
+      "jobs": "select *, CONCAT(`JobNo`, ' : ',`JobName`) as CJobName from job where CustomerName !='' AND CustomerName is NOT NULL AND Division in ({divisions}) order by Address ASC",
+      "tags": "SELECT t.Id, t.tag_number, t.status, t.description, DATE(t.tag_date) AS tag_date, t.IsPremium, t.JobName, t.CustomerID, t.PMEmail, t.JobNo, t.JobAddress AS Address, DATE(t.LastModifiedDate) AS LastModifiedDate, (SELECT COUNT(*) FROM tag_labor tl WHERE tl.tag_id = t.Id) AS labor_count, (SELECT COUNT(*) FROM tag_materials tm WHERE tm.tag_id = t.Id) AS material_count, (SELECT COUNT(*) FROM tag_equipment te WHERE te.tag_id = t.Id) AS equipment_count, (SELECT COUNT(*) FROM tag_other_expenses toe WHERE toe.tag_id = t.Id) AS expense_count FROM tags t ORDER BY t.LastModifiedDate DESC",
+      "tagLabor": "select * from tag_labor where tag_id = {tag_id}",
+      "tagMaterials": "select * from tag_materials where tag_id = {tag_id}",
+      "tagEquipment": "select * from tag_equipment where tag_id = {tag_id}",
+      "tagExpenses": "select * from tag_other_expenses where tag_id = {tag_id}"
+    }
+  }
+}

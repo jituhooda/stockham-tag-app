@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+.git
+.run
+data
+backups
+tests
+docs
+**/.env
+**/.env.*
+!**/.env.example
+infrastructure/kubernetes

@@ -1,0 +1,933 @@
+{
+  "name": "stockham-tags",
+  "version": "1.0.0",
+  "description": "Canonical logical data model for Stockham change-order tags. Physical schemas: database/schema/.",
+  "entities": [
+    {
+      "name": "Approver",
+      "table": "approvers",
+      "description": "Customer contacts who approve tags, remembered per customer.",
+      "primaryKey": [
+        "id"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "id",
+          "nullable": false,
+          "description": "Surrogate key"
+        },
+        {
+          "name": "customer",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Customer name"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Approver name"
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Approver email",
+          "default": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "description": "Creation time (UTC)"
+        }
+      ]
+    },
+    {
+      "name": "TagStatus",
+      "table": "tag_statuses",
+      "description": "Lifecycle states a tag can be in (reference data).",
+      "primaryKey": [
+        "code"
+      ],
+      "fields": [
+        {
+          "name": "code",
+          "type": "string",
+          "length": 20,
+          "nullable": false,
+          "description": "Status code stored on tags.status"
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "length": 50,
+          "nullable": false,
+          "description": "Display label"
+        },
+        {
+          "name": "editable",
+          "type": "boolean",
+          "nullable": false,
+          "description": "Whether tags in this status can be edited",
+          "default": false
+        },
+        {
+          "name": "sort_order",
+          "type": "integer",
+          "nullable": false,
+          "description": "Display order",
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "Tag",
+      "table": "tags",
+      "description": "A change-order tag: extra work on a job that the customer is asked to approve.",
+      "primaryKey": [
+        "id"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "id",
+          "nullable": false,
+          "description": "Surrogate key"
+        },
+        {
+          "name": "external_id",
+          "type": "id",
+          "nullable": true,
+          "description": "Id of the same tag in eMachine, when it was imported from there"
+        },
+        {
+          "name": "tag_number",
+          "type": "string",
+          "length": 50,
+          "nullable": false,
+          "description": "Human tag number (e.g. D4355-1)"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "length": 20,
+          "nullable": false,
+          "description": "Lifecycle status",
+          "default": "Draft"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": false,
+          "description": "What changed and why",
+          "default": ""
+        },
+        {
+          "name": "tag_date",
+          "type": "date",
+          "nullable": true,
+          "description": "Date the work happened"
+        },
+        {
+          "name": "is_premium",
+          "type": "boolean",
+          "nullable": false,
+          "description": "Premium time (after-hours / weekend)",
+          "default": false
+        },
+        {
+          "name": "job_no",
+          "type": "string",
+          "length": 50,
+          "nullable": false,
+          "description": "Job number from eMachine",
+          "default": ""
+        },
+        {
+          "name": "job_name",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Job name from eMachine",
+          "default": ""
+        },
+        {
+          "name": "customer_id",
+          "type": "string",
+          "length": 50,
+          "nullable": false,
+          "description": "Customer id from the job",
+          "default": ""
+        },
+        {
+          "name": "customer_name",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Customer name from the job",
+          "default": ""
+        },
+        {
+          "name": "pm_email",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Project manager email",
+          "default": ""
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "length": 500,
+          "nullable": false,
+          "description": "Job address",
+          "default": ""
+        },
+        {
+          "name": "created_by",
+          "type": "string",
+          "length": 100,
+          "nullable": false,
+          "description": "User who created the tag",
+          "default": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "description": "Creation time (UTC)"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": false,
+          "description": "Last change (UTC)"
+        },
+        {
+          "name": "submitted_at",
+          "type": "timestamp",
+          "nullable": true,
+          "description": "When it was signed or sent for signature"
+        }
+      ]
+    },
+    {
+      "name": "Attachment",
+      "table": "tag_attachments",
+      "description": "Photo or document attached to a tag; bytes live in file storage.",
+      "primaryKey": [
+        "id"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "id",
+          "nullable": false,
+          "description": "Surrogate key"
+        },
+        {
+          "name": "tag_id",
+          "type": "id",
+          "nullable": false,
+          "description": "Owning tag"
+        },
+        {
+          "name": "file_name",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Original file name"
+        },
+        {
+          "name": "content_type",
+          "type": "string",
+          "length": 100,
+          "nullable": false,
+          "description": "MIME type"
+        },
+        {
+          "name": "size_bytes",
+          "type": "integer",
+          "nullable": false,
+          "description": "Size in bytes"
+        },
+        {
+          "name": "storage_key",
+          "type": "string",
+          "length": 100,
+          "nullable": false,
+          "description": "Key of the stored file"
+        },
+        {
+          "name": "uploaded_by",
+          "type": "string",
+          "length": 100,
+          "nullable": false,
+          "description": "Uploader",
+          "default": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": false,
+          "description": "Upload time (UTC)"
+        }
+      ]
+    },
+    {
+      "name": "EquipmentLine",
+      "table": "tag_equipment",
+      "description": "Equipment used on a tag.",
+      "primaryKey": [
+        "id"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "id",
+          "nullable": false,
+          "description": "Surrogate key"
+        },
+        {
+          "name": "tag_id",
+          "type": "id",
+          "nullable": false,
+          "description": "Owning tag"
+        },
+        {
+          "name": "position",
+          "type": "integer",
+          "nullable": false,
+          "description": "Order within the tag",
+          "default": 0
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Equipment (from equipment_master or free text)",
+          "default": ""
+        },
+        {
+          "name": "qty",
+          "type": "decimal",
+          "precision": 12,
+          "scale": 2,
+          "nullable": false,
+          "description": "Quantity",
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "ExpenseLine",
+      "table": "tag_expenses",
+      "description": "Other charges (parking, dump fees \u2026) on a tag.",
+      "primaryKey": [
+        "id"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "id",
+          "nullable": false,
+          "description": "Surrogate key"
+        },
+        {
+          "name": "tag_id",
+          "type": "id",
+          "nullable": false,
+          "description": "Owning tag"
+        },
+        {
+          "name": "position",
+          "type": "integer",
+          "nullable": false,
+          "description": "Order within the tag",
+          "default": 0
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Expense type (from expenses_master or free text)",
+          "default": ""
+        },
+        {
+          "name": "amount",
+          "type": "decimal",
+          "precision": 12,
+          "scale": 2,
+          "nullable": false,
+          "description": "Amount in USD",
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "TagIssue",
+      "table": "tag_issues",
+      "description": "An issue the tag addresses.",
+      "primaryKey": [
+        "id"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "id",
+          "nullable": false,
+          "description": "Surrogate key"
+        },
+        {
+          "name": "tag_id",
+          "type": "id",
+          "nullable": false,
+          "description": "Owning tag"
+        },
+        {
+          "name": "position",
+          "type": "integer",
+          "nullable": false,
+          "description": "Order within the tag",
+          "default": 0
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "length": 1000,
+          "nullable": false,
+          "description": "Issue text"
+        }
+      ]
+    },
+    {
+      "name": "LaborLine",
+      "table": "tag_labor",
+      "description": "Hours worked by one employee on a tag.",
+      "primaryKey": [
+        "id"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "id",
+          "nullable": false,
+          "description": "Surrogate key"
+        },
+        {
+          "name": "tag_id",
+          "type": "id",
+          "nullable": false,
+          "description": "Owning tag"
+        },
+        {
+          "name": "position",
+          "type": "integer",
+          "nullable": false,
+          "description": "Order within the tag",
+          "default": 0
+        },
+        {
+          "name": "employee_id",
+          "type": "string",
+          "length": 50,
+          "nullable": false,
+          "description": "Employee id from eMachine",
+          "default": ""
+        },
+        {
+          "name": "employee_name",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Employee display name",
+          "default": ""
+        },
+        {
+          "name": "trade",
+          "type": "string",
+          "length": 100,
+          "nullable": false,
+          "description": "Trade (from tag_labor_rates)",
+          "default": ""
+        },
+        {
+          "name": "regular_hours",
+          "type": "decimal",
+          "precision": 8,
+          "scale": 2,
+          "nullable": false,
+          "description": "Regular hours",
+          "default": 0
+        },
+        {
+          "name": "overtime_hours",
+          "type": "decimal",
+          "precision": 8,
+          "scale": 2,
+          "nullable": false,
+          "description": "Overtime hours",
+          "default": 0
+        },
+        {
+          "name": "double_hours",
+          "type": "decimal",
+          "precision": 8,
+          "scale": 2,
+          "nullable": false,
+          "description": "Double-time hours",
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "MaterialLine",
+      "table": "tag_materials",
+      "description": "Material used on a tag.",
+      "primaryKey": [
+        "id"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "type": "id",
+          "nullable": false,
+          "description": "Surrogate key"
+        },
+        {
+          "name": "tag_id",
+          "type": "id",
+          "nullable": false,
+          "description": "Owning tag"
+        },
+        {
+          "name": "position",
+          "type": "integer",
+          "nullable": false,
+          "description": "Order within the tag",
+          "default": 0
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Material (from materials_master or free text)",
+          "default": ""
+        },
+        {
+          "name": "qty",
+          "type": "decimal",
+          "precision": 12,
+          "scale": 2,
+          "nullable": false,
+          "description": "Quantity",
+          "default": 0
+        },
+        {
+          "name": "length",
+          "type": "decimal",
+          "precision": 12,
+          "scale": 2,
+          "nullable": true,
+          "description": "Length, when the material is cut to length"
+        }
+      ]
+    },
+    {
+      "name": "Signature",
+      "table": "tag_signatures",
+      "description": "The customer approver's signature or signature request (one per tag).",
+      "primaryKey": [
+        "tag_id"
+      ],
+      "fields": [
+        {
+          "name": "tag_id",
+          "type": "id",
+          "nullable": false,
+          "description": "Owning tag"
+        },
+        {
+          "name": "approver",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Approver name",
+          "default": ""
+        },
+        {
+          "name": "mode",
+          "type": "string",
+          "length": 20,
+          "nullable": false,
+          "description": "in-person or send",
+          "default": "in-person"
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "length": 255,
+          "nullable": false,
+          "description": "Where the request was sent",
+          "default": ""
+        },
+        {
+          "name": "image_png",
+          "type": "text",
+          "nullable": false,
+          "description": "Signature as a PNG data URL (in-person)",
+          "default": ""
+        },
+        {
+          "name": "signed_at",
+          "type": "timestamp",
+          "nullable": true,
+          "description": "Signing time (UTC)"
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "name": "Tag_status",
+      "from": {
+        "entity": "Tag",
+        "field": "status"
+      },
+      "to": {
+        "entity": "TagStatus",
+        "field": "code"
+      },
+      "cardinality": "many-to-one",
+      "onDelete": "RESTRICT"
+    },
+    {
+      "name": "Attachment_tag_id",
+      "from": {
+        "entity": "Attachment",
+        "field": "tag_id"
+      },
+      "to": {
+        "entity": "Tag",
+        "field": "id"
+      },
+      "cardinality": "many-to-one",
+      "onDelete": "CASCADE"
+    },
+    {
+      "name": "EquipmentLine_tag_id",
+      "from": {
+        "entity": "EquipmentLine",
+        "field": "tag_id"
+      },
+      "to": {
+        "entity": "Tag",
+        "field": "id"
+      },
+      "cardinality": "many-to-one",
+      "onDelete": "CASCADE"
+    },
+    {
+      "name": "ExpenseLine_tag_id",
+      "from": {
+        "entity": "ExpenseLine",
+        "field": "tag_id"
+      },
+      "to": {
+        "entity": "Tag",
+        "field": "id"
+      },
+      "cardinality": "many-to-one",
+      "onDelete": "CASCADE"
+    },
+    {
+      "name": "TagIssue_tag_id",
+      "from": {
+        "entity": "TagIssue",
+        "field": "tag_id"
+      },
+      "to": {
+        "entity": "Tag",
+        "field": "id"
+      },
+      "cardinality": "many-to-one",
+      "onDelete": "CASCADE"
+    },
+    {
+      "name": "LaborLine_tag_id",
+      "from": {
+        "entity": "LaborLine",
+        "field": "tag_id"
+      },
+      "to": {
+        "entity": "Tag",
+        "field": "id"
+      },
+      "cardinality": "many-to-one",
+      "onDelete": "CASCADE"
+    },
+    {
+      "name": "MaterialLine_tag_id",
+      "from": {
+        "entity": "MaterialLine",
+        "field": "tag_id"
+      },
+      "to": {
+        "entity": "Tag",
+        "field": "id"
+      },
+      "cardinality": "many-to-one",
+      "onDelete": "CASCADE"
+    },
+    {
+      "name": "Signature_tag_id",
+      "from": {
+        "entity": "Signature",
+        "field": "tag_id"
+      },
+      "to": {
+        "entity": "Tag",
+        "field": "id"
+      },
+      "cardinality": "one-to-one",
+      "onDelete": "CASCADE"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "uq_approvers_customer_name",
+      "entity": "Approver",
+      "type": "unique",
+      "fields": [
+        "customer",
+        "name"
+      ]
+    },
+    {
+      "name": "uq_tags_external_id",
+      "entity": "Tag",
+      "type": "unique",
+      "fields": [
+        "external_id"
+      ]
+    },
+    {
+      "name": "uq_tag_attachments_storage_key",
+      "entity": "Attachment",
+      "type": "unique",
+      "fields": [
+        "storage_key"
+      ]
+    },
+    {
+      "name": "ck_tag_labor_regular_hours",
+      "entity": "LaborLine",
+      "type": "check",
+      "fields": [
+        "regular_hours"
+      ],
+      "expression": "regular_hours >= 0"
+    },
+    {
+      "name": "ck_tag_labor_overtime_hours",
+      "entity": "LaborLine",
+      "type": "check",
+      "fields": [
+        "overtime_hours"
+      ],
+      "expression": "overtime_hours >= 0"
+    },
+    {
+      "name": "ck_tag_labor_double_hours",
+      "entity": "LaborLine",
+      "type": "check",
+      "fields": [
+        "double_hours"
+      ],
+      "expression": "double_hours >= 0"
+    },
+    {
+      "name": "ck_tag_materials_qty",
+      "entity": "MaterialLine",
+      "type": "check",
+      "fields": [
+        "qty"
+      ],
+      "expression": "qty >= 0"
+    },
+    {
+      "name": "ck_tag_materials_length",
+      "entity": "MaterialLine",
+      "type": "check",
+      "fields": [
+        "length"
+      ],
+      "expression": "length >= 0"
+    },
+    {
+      "name": "ck_tag_equipment_qty",
+      "entity": "EquipmentLine",
+      "type": "check",
+      "fields": [
+        "qty"
+      ],
+      "expression": "qty >= 0"
+    },
+    {
+      "name": "ck_tag_expenses_amount",
+      "entity": "ExpenseLine",
+      "type": "check",
+      "fields": [
+        "amount"
+      ],
+      "expression": "amount >= 0"
+    },
+    {
+      "name": "ck_tag_attachments_size_bytes",
+      "entity": "Attachment",
+      "type": "check",
+      "fields": [
+        "size_bytes"
+      ],
+      "expression": "size_bytes >= 0"
+    },
+    {
+      "name": "ck_tag_signatures_mode",
+      "entity": "Signature",
+      "type": "check",
+      "fields": [
+        "mode"
+      ],
+      "expression": "mode IN ('in-person', 'send')"
+    }
+  ],
+  "indexes": [
+    {
+      "name": "ix_tags_updated_at",
+      "entity": "Tag",
+      "table": "tags",
+      "fields": [
+        "updated_at"
+      ],
+      "unique": false
+    },
+    {
+      "name": "ix_tags_status",
+      "entity": "Tag",
+      "table": "tags",
+      "fields": [
+        "status"
+      ],
+      "unique": false
+    },
+    {
+      "name": "ix_tags_job_no",
+      "entity": "Tag",
+      "table": "tags",
+      "fields": [
+        "job_no"
+      ],
+      "unique": false
+    },
+    {
+      "name": "ix_tag_labor_tag_id",
+      "entity": "LaborLine",
+      "table": "tag_labor",
+      "fields": [
+        "tag_id"
+      ],
+      "unique": false
+    },
+    {
+      "name": "ix_tag_materials_tag_id",
+      "entity": "MaterialLine",
+      "table": "tag_materials",
+      "fields": [
+        "tag_id"
+      ],
+      "unique": false
+    },
+    {
+      "name": "ix_tag_equipment_tag_id",
+      "entity": "EquipmentLine",
+      "table": "tag_equipment",
+      "fields": [
+        "tag_id"
+      ],
+      "unique": false
+    },
+    {
+      "name": "ix_tag_expenses_tag_id",
+      "entity": "ExpenseLine",
+      "table": "tag_expenses",
+      "fields": [
+        "tag_id"
+      ],
+      "unique": false
+    },
+    {
+      "name": "ix_tag_issues_tag_id",
+      "entity": "TagIssue",
+      "table": "tag_issues",
+      "fields": [
+        "tag_id"
+      ],
+      "unique": false
+    },
+    {
+      "name": "ix_tag_attachments_tag_id",
+      "entity": "Attachment",
+      "table": "tag_attachments",
+      "fields": [
+        "tag_id"
+      ],
+      "unique": false
+    }
+  ],
+  "enums": [
+    {
+      "name": "TagStatus",
+      "values": [
+        "Draft",
+        "Submitted",
+        "Signed",
+        "Approved",
+        "Rejected"
+      ],
+      "editable": [
+        "Draft",
+        "Rejected"
+      ],
+      "description": "Draft \u2192 Signed (signed in person) or Submitted (sent for signature) \u2192 Approved or Rejected; Rejected tags are editable again.",
+      "storedIn": "tag_statuses (reference table)"
+    },
+    {
+      "name": "SignatureMode",
+      "values": [
+        "in-person",
+        "send"
+      ],
+      "description": "How the approver signs.",
+      "storedIn": "tag_signatures.mode (CHECK)"
+    },
+    {
+      "name": "Role",
+      "values": [
+        "viewer",
+        "editor",
+        "approver",
+        "admin"
+      ],
+      "description": "User roles; see backend/apexapp/rbac.py.",
+      "storedIn": "configuration (AUTH_TOKENS)"
+    }
+  ]
+}

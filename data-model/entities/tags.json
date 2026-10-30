@@ -1,0 +1,131 @@
+{
+  "name": "Tag",
+  "table": "tags",
+  "description": "A change-order tag: extra work on a job that the customer is asked to approve.",
+  "primaryKey": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "type": "id",
+      "nullable": false,
+      "description": "Surrogate key"
+    },
+    {
+      "name": "external_id",
+      "type": "id",
+      "nullable": true,
+      "description": "Id of the same tag in eMachine, when it was imported from there"
+    },
+    {
+      "name": "tag_number",
+      "type": "string",
+      "length": 50,
+      "nullable": false,
+      "description": "Human tag number (e.g. D4355-1)"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "length": 20,
+      "nullable": false,
+      "description": "Lifecycle status",
+      "default": "Draft"
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "nullable": false,
+      "description": "What changed and why",
+      "default": ""
+    },
+    {
+      "name": "tag_date",
+      "type": "date",
+      "nullable": true,
+      "description": "Date the work happened"
+    },
+    {
+      "name": "is_premium",
+      "type": "boolean",
+      "nullable": false,
+      "description": "Premium time (after-hours / weekend)",
+      "default": false
+    },
+    {
+      "name": "job_no",
+      "type": "string",
+      "length": 50,
+      "nullable": false,
+      "description": "Job number from eMachine",
+      "default": ""
+    },
+    {
+      "name": "job_name",
+      "type": "string",
+      "length": 255,
+      "nullable": false,
+      "description": "Job name from eMachine",
+      "default": ""
+    },
+    {
+      "name": "customer_id",
+      "type": "string",
+      "length": 50,
+      "nullable": false,
+      "description": "Customer id from the job",
+      "default": ""
+    },
+    {
+      "name": "customer_name",
+      "type": "string",
+      "length": 255,
+      "nullable": false,
+      "description": "Customer name from the job",
+      "default": ""
+    },
+    {
+      "name": "pm_email",
+      "type": "string",
+      "length": 255,
+      "nullable": false,
+      "description": "Project manager email",
+      "default": ""
+    },
+    {
+      "name": "address",
+      "type": "string",
+      "length": 500,
+      "nullable": false,
+      "description": "Job address",
+      "default": ""
+    },
+    {
+      "name": "created_by",
+      "type": "string",
+      "length": 100,
+      "nullable": false,
+      "description": "User who created the tag",
+      "default": ""
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp",
+      "nullable": false,
+      "description": "Creation time (UTC)"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp",
+      "nullable": false,
+      "description": "Last change (UTC)"
+    },
+    {
+      "name": "submitted_at",
+      "type": "timestamp",
+      "nullable": true,
+      "description": "When it was signed or sent for signature"
+    }
+  ]
+}

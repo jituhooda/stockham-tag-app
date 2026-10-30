@@ -1,0 +1,44 @@
+{
+  "generator": "ApexStudio",
+  "projectId": "stockham-tags",
+  "schemaVersion": 1,
+  "name": "Stockham Tags",
+  "slug": "stockham-tags",
+  "version": "1.0.0",
+  "description": "Change-order tag management for Stockham Construction (web, tablet, mobile).",
+  "organization": "Stockham Construction",
+  "targets": [
+    "web",
+    "tablet",
+    "mobile-web"
+  ],
+  "pwa": true,
+  "stack": {
+    "frontend": "react-vite-jsx",
+    "backend": "fastapi",
+    "database": [
+      "sqlite",
+      "postgres"
+    ]
+  },
+  "sources": {
+    "designs": [
+      "Tag list",
+      "Cost: Labor",
+      "Cost: Material",
+      "Cost: Expenses",
+      "Cost: Equipment",
+      "Issues",
+      "Files",
+      "Sign"
+    ],
+    "dataApi": "eMachine model_query (base64 SQL, bearer token)"
+  },
+  "paths": {
+    "frontend": "frontend",
+    "backend": "backend",
+    "dataModel": "data-model",
+    "config": "config",
+    "api": "api"
+  }
+}

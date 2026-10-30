@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stockham-tags
+data:
+  APP_ENV: production
+  EMACHINE_MODE: live
+  AUTH_MODE: token
+  LOG_FORMAT: json
+  LOG_LEVEL: INFO
+  CORS_ORIGINS: https://tags.example.com
+  ATTACHMENTS_DIR: /data/attachments

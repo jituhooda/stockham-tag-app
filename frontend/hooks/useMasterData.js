@@ -1,0 +1,42 @@
+import { useEffect, useState } from 'react';
+import { apexApi } from '../lib/apexApi';
+
+// Shared across components and kept for the session; the backend caches eMachine too.
+const cache = new Map();
+
+function load(key, fetcher) {
+  if (!cache.has(key)) {
+    const p = fetcher().catch((e) => {
+      cache.delete(key); // allow a retry next time
+      throw e;
+    });
+    cache.set(key, p);
+  }
+  return cache.get(key);
+}
+
+export const clearMasterDataCache = () => cache.clear();
+
+/**
+ * Reference list from the backend: employees, materials, equipment, expenses,
+ * trades, issues, or jobs (pass divisions).
+ */
+export function useMasterData(kind, divisions) {
+  const key = kind === 'jobs' ? `jobs:${(divisions || []).join('|')}` : kind;
+  const [state, setState] = useState(() => ({ data: [], loading: true, error: '' }));
+
+  useEffect(() => {
+    let live = true;
+    setState((s) => ({ ...s, loading: true, error: '' }));
+    const fetcher = kind === 'jobs' ? () => apexApi.master.jobs(divisions) : apexApi.master[kind];
+    load(key, fetcher)
+      .then((data) => live && setState({ data, loading: false, error: '' }))
+      .catch((e) => live && setState({ data: [], loading: false, error: e.message }));
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` captures divisions
+  }, [key, kind]);
+
+  return state;
+}

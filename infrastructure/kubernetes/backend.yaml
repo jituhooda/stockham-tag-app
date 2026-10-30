@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: stockham-tags-attachments
+spec:
+  accessModes: [ReadWriteMany]   # shared by all API replicas
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels: { app: stockham-tags, component: backend }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: stockham-tags, component: backend }
+  template:
+    metadata:
+      labels: { app: stockham-tags, component: backend }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: /metrics
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      initContainers:
+        - name: migrate
+          image: stockham-tags-backend
+          command: ["python", "-m", "apexapp.database.migrate"]
+          envFrom:
+            - configMapRef: { name: stockham-tags }
+            - secretRef: { name: stockham-tags }
+      containers:
+        - name: api
+          image: stockham-tags-backend
+          ports: [{ containerPort: 8000, name: http }]
+          env:
+            - { name: RUN_MIGRATIONS, value: "false" }   # done by the init container
+          envFrom:
+            - configMapRef: { name: stockham-tags }
+            - secretRef: { name: stockham-tags }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+            - { name: tmp, mountPath: /tmp }   # large uploads spool here
+          readinessProbe:
+            httpGet: { path: /health/ready, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health/live, port: http }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 192Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: stockham-tags-attachments }
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector: { app: stockham-tags, component: backend }
+  ports: [{ port: 8000, targetPort: http, name: http }]

@@ -1,0 +1,13 @@
+{
+  "name": "Attachment_tag_id",
+  "from": {
+    "entity": "Attachment",
+    "field": "tag_id"
+  },
+  "to": {
+    "entity": "Tag",
+    "field": "id"
+  },
+  "cardinality": "many-to-one",
+  "onDelete": "CASCADE"
+}

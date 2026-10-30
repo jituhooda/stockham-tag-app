@@ -1,0 +1,54 @@
+{
+  "name": "MaterialLine",
+  "table": "tag_materials",
+  "description": "Material used on a tag.",
+  "primaryKey": [
+    "id"
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "type": "id",
+      "nullable": false,
+      "description": "Surrogate key"
+    },
+    {
+      "name": "tag_id",
+      "type": "id",
+      "nullable": false,
+      "description": "Owning tag"
+    },
+    {
+      "name": "position",
+      "type": "integer",
+      "nullable": false,
+      "description": "Order within the tag",
+      "default": 0
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "length": 255,
+      "nullable": false,
+      "description": "Material (from materials_master or free text)",
+      "default": ""
+    },
+    {
+      "name": "qty",
+      "type": "decimal",
+      "precision": 12,
+      "scale": 2,
+      "nullable": false,
+      "description": "Quantity",
+      "default": 0
+    },
+    {
+      "name": "length",
+      "type": "decimal",
+      "precision": 12,
+      "scale": 2,
+      "nullable": true,
+      "description": "Length, when the material is cut to length"
+    }
+  ]
+}

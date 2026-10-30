@@ -1,0 +1,9 @@
+{
+  "name": "ck_tag_attachments_size_bytes",
+  "entity": "Attachment",
+  "type": "check",
+  "fields": [
+    "size_bytes"
+  ],
+  "expression": "size_bytes >= 0"
+}

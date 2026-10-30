@@ -1,0 +1,9 @@
+{
+  "name": "ix_tag_issues_tag_id",
+  "entity": "TagIssue",
+  "table": "tag_issues",
+  "fields": [
+    "tag_id"
+  ],
+  "unique": false
+}

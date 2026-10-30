@@ -1,0 +1,9 @@
+{
+  "name": "ix_tag_equipment_tag_id",
+  "entity": "EquipmentLine",
+  "table": "tag_equipment",
+  "fields": [
+    "tag_id"
+  ],
+  "unique": false
+}

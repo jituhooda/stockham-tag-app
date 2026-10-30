@@ -1,0 +1,14 @@
+{
+  "description": "Rules that keep application SQL and migrations portable between SQLite and PostgreSQL. tests/database-portability enforces the checkable ones.",
+  "rules": [
+    { "id": "P001", "rule": "Application queries use SQLAlchemy Core expressions, never raw dialect SQL.", "checked": true },
+    { "id": "P002", "rule": "Every migration version that has a dialect-specific file has one for both sqlite and postgres.", "checked": true },
+    { "id": "P003", "rule": "Files in migrations/common use only portable SQL: plain INSERT/UPDATE/DELETE, TRUE/FALSE literals, no RETURNING, no ON CONFLICT, no identity/autoincrement syntax.", "checked": true },
+    { "id": "P004", "rule": "Both dialects end up with the same tables and the same columns per table.", "checked": true },
+    { "id": "P005", "rule": "The tables and columns in data-model/model.json match the migrated schema.", "checked": true },
+    { "id": "P006", "rule": "Store timestamps in UTC; never rely on the database session time zone.", "checked": false },
+    { "id": "P007", "rule": "Do not depend on string length enforcement by the database; validate in the API.", "checked": false },
+    { "id": "P008", "rule": "Avoid database-generated values other than primary keys; set timestamps in the application.", "checked": false },
+    { "id": "P009", "rule": "Use lower() on both sides for case-insensitive matches instead of ILIKE or COLLATE NOCASE.", "checked": false }
+  ]
+}

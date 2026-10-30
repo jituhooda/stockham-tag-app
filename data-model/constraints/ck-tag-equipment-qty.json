@@ -1,0 +1,9 @@
+{
+  "name": "ck_tag_equipment_qty",
+  "entity": "EquipmentLine",
+  "type": "check",
+  "fields": [
+    "qty"
+  ],
+  "expression": "qty >= 0"
+}

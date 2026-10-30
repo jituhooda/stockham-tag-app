@@ -1,53 +1,82 @@
 # Stockham Tags
 
-Change-order tag management for Stockham Construction. It's one responsive web app that works on phones, tablets and desktop browsers, and it can be installed to a phone's home screen.
+Change-order tags for **Stockham Construction**. Field staff record extra work
+on a job (labor, materials, equipment, other charges, photos and the issues it
+addresses), and the customer's approver signs on the device or by email. It is
+one responsive web app for phones, tablets and desktop browsers.
 
-- **Phone**: one screen at a time (the tag list, then a tag), as in the original mobile design.
-- **Tablet portrait**: the tag list shows in two columns.
-- **Tablet landscape / desktop (≥1024px)**: the list stays on the left and the open tag fills the right.
+| Phone | Tablet | Desktop |
+| --- | --- | --- |
+| one screen at a time, like the mockups | tag list in two columns | list on the left, open tag on the right |
 
-## Features
-
-| Screen | What it does |
-| --- | --- |
-| Tag list | Search by tag, job, description or address. Filter by status. Each card shows labor, material, equipment and expense counts. **Add Tag** starts a new draft. |
-| Details | Job picker (searchable, from the `job` query for your division), tag #, date, description, PM email, address, premium time. |
-| Cost | Four sections: **Labor** (employee, trade, regular/OT/DT hours), **Material** (description, qty, length), **Expenses** (type and amount, prefilled from the master row when it has one) and **Equipment** (description, qty). Every picker also accepts a value that isn't in the list. |
-| Files | Add photos and documents, preview them, delete them. Photos are downscaled to 1600px before they're stored. |
-| Issues | Link issues to the tag, from a query if one is configured, otherwise typed in. |
-| Sign | Choose an approver for the job's customer, then either **sign in person** on the signature pad (status becomes *Signed*) or **send for signature** (status becomes *Submitted*, and an email draft opens). |
-
-Submitting checks that the tag has a job, a description and at least one complete cost line. Tags that aren't Draft or Rejected are read-only. If you try to leave a tag with unsaved edits, the app asks first.
-
-The hamburger menu sets **who you are**. That runs `select Division from employees where EMPLOYEE = '…'`, and the result decides which divisions' jobs are offered (DFH by default).
-
-## Data
-
-Every read goes through `GET /datamodel/api/model_query?query=<base64 SQL>` with a bearer token. The queries are in `src/api/queries.ts`. Besides the queries you supplied, the app also reads a tag's existing lines with `select * from tag_labor|tag_materials|tag_equipment|tag_other_expenses where tag_id = <Id>`. Those tables come from the tag-list query.
-
-Column names are matched case-insensitively against a list of likely names (see `src/utils/fields.ts` and `src/store/mappers.ts`). If a field shows up blank, add the real column name to the relevant list there.
-
-**Saving:** the API is read-only, so saved tags, attachments, issues and signatures are stored **on the device** (`localStorage`) and layered over the server data. `persistTag` in `src/store/TagsContext.tsx` is the single place to call a write endpoint once one exists.
-
-## Running it
+## Quick start
 
 ```bash
-npm install
-cp .env.example .env.local   # then put the API token in VITE_API_TOKEN
-npm run dev                  # http://localhost:5173, also reachable from phones on the same network
+scripts/setup.sh                 # installs dependencies, creates .env files, migrates SQLite
+scripts/start.sh --fixtures      # API :8000 + web :5173 with offline sample data
 ```
 
-`npm run build` writes a static site to `dist/`. `npm run preview` serves that build.
+Open http://localhost:5173. For real data, put the eMachine token in
+`backend/.env` (`EMACHINE_API_TOKEN=`) and run `scripts/start.sh`.
 
-In dev and preview, Vite proxies `/datamodel/*` to `https://emachine.instantar.io`, so CORS doesn't get in the way. For production you have two options:
+With Docker:
 
-- Host `dist/` behind a reverse proxy that forwards `/datamodel/` to the API. This is the best option, because the proxy can also add the `Authorization` header so the token never reaches the browser.
-- Set `VITE_API_URL` to the full API URL, if the API allows your site's origin.
+```bash
+cp .env.example .env             # set EMACHINE_API_TOKEN
+docker compose up -d --build     # http://localhost:8080
+```
 
-> Anything in a `VITE_*` variable is compiled into the JavaScript the browser downloads. Treat a token placed there as visible to every user of the site.
+## How it works
 
-| Variable | Purpose |
+```
+browser ──▶ nginx (React app) ──/api──▶ FastAPI ──▶ SQLite / PostgreSQL
+                                           └──────▶ eMachine (reference data, read-only)
+```
+
+- **Reference data** (employees, jobs, materials, equipment, expense types,
+  labor trades) comes from eMachine through the backend, which base64-encodes
+  the SQL and adds the bearer token. The token never reaches the browser.
+- **Tags** are stored in this app's database. Tags that exist only in eMachine
+  appear in the list too, and are copied in the first time someone saves one.
+- **Lifecycle:** Draft → Signed (signed in person) or Submitted (sent for
+  signature) → Approved / Rejected (Rejected is editable again).
+
+## Repository layout
+
+| Path | What |
 | --- | --- |
-| `VITE_API_TOKEN` | Bearer token, without the `Bearer ` prefix |
-| `VITE_API_URL` | Query endpoint (default `/datamodel/api/model_query`) |
-| `VITE_ISSUES_QUERY` | Optional SQL returning the issues offered on the Issues tab |
+| `frontend/` | React + Vite app (JSX) |
+| `backend/` | FastAPI app (`apexapp`) |
+| `data-model/` | Canonical logical data model |
+| `database/` | Migrations (SQLite + PostgreSQL), schema snapshots, seeds, fixtures, portability rules |
+| `config/` | App, database, branding, features, integrations, security, logging settings (+ schema) |
+| `api/` | OpenAPI (YAML/JSON), Swagger config, Postman collection |
+| `tests/` | Integration, API contract, security, database portability, browser e2e |
+| `infrastructure/` | Docker, nginx, monitoring, Kubernetes |
+| `scripts/` | Setup, start/stop, health, DB tasks, backup/restore, export validation |
+| `docs/` | Architecture, API, database, deployment, configuration, security, troubleshooting |
+| `.apexstudio/` | Export metadata and integrity hashes |
+
+## Tests
+
+```bash
+scripts/validate-export.sh --tests             # everything below, on SQLite
+cd backend && uv run pytest                    # backend unit/API tests
+cd backend && uv run pytest ../tests           # integration, contract, security, portability
+cd frontend && npm test                        # frontend unit tests
+cd tests/e2e && npm install && npm test        # browser tests against a running stack (--fixtures)
+```
+
+Add `TEST_DATABASE_URL` / `TEST_POSTGRES_URL` to run the database tests on PostgreSQL.
+
+## Documentation
+
+[Architecture](docs/architecture.md) · [API](docs/api.md) ·
+[Database](docs/database.md) · [Portability](docs/database-portability.md) ·
+[Configuration](docs/configuration.md) · [Deployment](docs/deployment.md) ·
+[Security](docs/security.md) · [Troubleshooting](docs/troubleshooting.md) ·
+[Code generation](docs/code-generation.md) · [Changelog](CHANGELOG.md)
+
+## License
+
+Proprietary. See [LICENSE](LICENSE).

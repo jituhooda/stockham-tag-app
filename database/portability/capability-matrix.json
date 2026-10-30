@@ -1,0 +1,18 @@
+{
+  "description": "Database features the app relies on, and how each supported database provides them.",
+  "databases": {
+    "sqlite": { "minimumVersion": "3.35", "recommendedFor": ["development", "single-site deployments", "tests"] },
+    "postgres": { "minimumVersion": "13", "testedVersion": "16", "recommendedFor": ["staging", "production", "multiple API replicas"] }
+  },
+  "capabilities": [
+    { "feature": "INSERT … RETURNING", "usedBy": "crud.insert_row", "sqlite": "yes (3.35+)", "postgres": "yes" },
+    { "feature": "Foreign keys with ON DELETE CASCADE", "usedBy": "tag children", "sqlite": "yes, needs PRAGMA foreign_keys=ON (set by the adapter)", "postgres": "yes" },
+    { "feature": "CHECK constraints", "usedBy": "non-negative quantities, signature mode", "sqlite": "yes", "postgres": "yes" },
+    { "feature": "Transactional DDL", "usedBy": "migration runner", "sqlite": "yes", "postgres": "yes" },
+    { "feature": "Concurrent writers", "usedBy": "multiple users saving", "sqlite": "one writer at a time (WAL + busy_timeout)", "postgres": "yes" },
+    { "feature": "Timezone-aware timestamps", "usedBy": "created_at, updated_at, signed_at", "sqlite": "no (stored as UTC text)", "postgres": "yes (TIMESTAMPTZ)" },
+    { "feature": "Case-insensitive comparison", "usedBy": "approver lookup", "sqlite": "lower() on both sides", "postgres": "lower() on both sides" },
+    { "feature": "Connection pooling", "usedBy": "API", "sqlite": "n/a (file)", "postgres": "SQLAlchemy pool (poolSize / maxOverflow)" },
+    { "feature": "Online backup", "usedBy": "scripts/backup-db.sh", "sqlite": "sqlite3 .backup", "postgres": "pg_dump -Fc" }
+  ]
+}
