@@ -11,6 +11,13 @@ All notable changes to this project are documented here. The format follows
   cross-cutting tests on SQLite and PostgreSQL, frontend tests and build,
   browser end-to-end tests, Docker image builds with an API smoke test.
 
+### Changed
+- Layout now follows the device: phones show one screen at a time (and stay
+  usable on their side), tablets from 768px keep the tag list beside the open
+  tag, and desktops from 1200px get a wider list and multi-column forms. Grids
+  size to their pane with container queries. On tablet and desktop the open tag
+  has a close button and no duplicate menu.
+
 ## [1.0.0] - 2026-10-30
 
 ### Added

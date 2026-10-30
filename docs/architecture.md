@@ -64,10 +64,25 @@ after which the local copy is shown instead. eMachine is never written to.
 | --- | --- |
 | `App.jsx`, `main.jsx` | Providers and the sign-in gate |
 | `routes/` | URL scheme: `/tags/:id/:tab/:sub?` |
-| `layouts/` | Shell: one pane on phones, list + detail from 1024 px |
+| `layouts/` | Shell: one pane on phones; list beside the open tag on tablets and desktops (`hooks/useLayout.js`) |
 | `pages/`, `pages/tabs/` | List, detail, and the Details / Cost / Files / Issues / Sign tabs |
 | `components/` | `ui.jsx` (shared widgets), `icons.jsx`, menu drawer |
 | `hooks/` | Master data cache, tag editor state, unsaved-changes guard |
 | `state/` | App config + user + device settings; tag list |
 | `services/` | Validation, form ↔ API conversion, image compression |
 | `lib/` | `apexConfig`, `apexHttp` (fetch wrapper), `apexApi` (endpoint map) |
+
+## Responsive layout
+
+| Device | Viewport | Layout |
+| --- | --- | --- |
+| Phone | narrower than 768px | One screen at a time, as in the mockups. Back arrow returns to the list. |
+| Phone on its side | shorter than 500px | Still one screen; header, tabs and Save bar shrink, tabs and Save stay pinned while the form scrolls. |
+| Tablet | 768–1199px | Tag list (320px) on the left, open tag on the right; ✕ closes the tag. |
+| Desktop | 1200px+ | Wider list (400–460px); Details fields four to a row, cost lines two to a row. |
+
+`hooks/useLayout.js` picks the layout with `matchMedia`; the shell gets
+`data-layout="phone|tablet|desktop"`. Inside each pane, CSS container queries
+size grids to the pane rather than the window, so the tag list shows 1–3
+columns depending on how much room it has. `tests/e2e/layout.test.mjs` checks
+each size.

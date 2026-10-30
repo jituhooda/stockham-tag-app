@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
 import { Link, NavLink, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { IconBack, IconMenu } from '../components/icons';
+import { IconBack, IconClose, IconMenu } from '../components/icons';
 import { MenuDrawer } from '../components/MenuDrawer';
 import { Spinner, StatusPill, useToast } from '../components/ui';
+import { useLayout } from '../hooks/useLayout';
 import { useTagEditor } from '../hooks/useTagEditor';
 import { useUnsavedChangesGuard } from '../hooks/useUnsavedChangesGuard';
 import { TAB_KEYS, tagPath } from '../routes/router';
@@ -34,6 +35,7 @@ function TagDetail({ id }) {
   const { can } = useApp();
   const { refresh } = useTagList();
   const editor = useTagEditor(id);
+  const { split } = useLayout();
   const [menu, setMenu] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
@@ -97,8 +99,9 @@ function TagDetail({ id }) {
   return (
     <div className="detail-page">
       <header className="detail-head">
-        <button className="icon-btn icon-btn--light" onClick={() => navigate('/')} aria-label="Back to tags">
-          <IconBack size={30} />
+        {/* Phone: back to the list. Tablet/desktop: the list is already visible, so close the tag. */}
+        <button className="icon-btn icon-btn--light" onClick={() => navigate('/')} aria-label={split ? 'Close tag' : 'Back to tags'}>
+          {split ? <IconClose size={26} /> : <IconBack size={30} />}
         </button>
         <div className="detail-head__title">
           <h2>
@@ -108,9 +111,11 @@ function TagDetail({ id }) {
           <span>{[tag.jobName, tag.jobNo].filter(Boolean).join(' ') || 'No job selected'}</span>
         </div>
         <StatusPill status={tag.status} />
-        <button className="icon-btn icon-btn--light icon-btn--dim" aria-label="Open menu" onClick={() => setMenu(true)}>
-          <IconMenu size={26} />
-        </button>
+        {!split && (
+          <button className="icon-btn icon-btn--light icon-btn--dim" aria-label="Open menu" onClick={() => setMenu(true)}>
+            <IconMenu size={26} />
+          </button>
+        )}
       </header>
 
       <nav className="tabs" aria-label="Tag sections">

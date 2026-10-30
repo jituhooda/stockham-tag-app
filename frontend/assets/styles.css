@@ -37,20 +37,22 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .center { text-align: center; }
 .grow { flex: 1 1 0; min-width: 0; }
 
-/* ---------- Shell: one pane on phones, master/detail from 1024px ---------- */
+/* ---------- Shell ----------
+ * Layout comes from hooks/useLayout.js (same breakpoints):
+ *   phone   (<768px wide, or <500px tall): one pane at a time
+ *   tablet  (768-1199px): list 320px | open tag
+ *   desktop (1200px+):    list 400-460px | open tag
+ * Inside the panes, container queries size things to the pane, not the window. */
 .shell { height: 100%; display: flex; }
 .shell__list, .shell__detail { height: 100%; min-width: 0; }
 .shell__list { flex: 1; }
-.shell__detail { flex: 1; display: none; }
-.shell--detail .shell__list { display: none; }
-.shell--detail .shell__detail { display: block; }
-
-@media (min-width: 1024px) {
-  .shell__list { display: block !important; flex: 0 0 400px; border-right: 1px solid var(--line); }
-  .shell__detail { display: block; }
-}
-@media (min-width: 1400px) {
-  .shell__list { flex-basis: 460px; }
+.shell__detail { flex: 1; }
+.shell--show-list .shell__detail,
+.shell--show-detail .shell__list { display: none; }
+.shell--split .shell__list { flex: 0 0 320px; border-right: 1px solid var(--line); }
+.shell--desktop .shell__list { flex-basis: 400px; }
+@media (min-width: 1600px) {
+  .shell--desktop .shell__list { flex-basis: 460px; }
 }
 
 .placeholder { height: 100%; display: grid; place-content: center; justify-items: center; gap: 12px; color: var(--muted); padding: 24px; text-align: center; }
@@ -147,15 +149,26 @@ input[type='number']::-webkit-inner-spin-button { opacity: 0.4; }
 .banner--info { background: #e4ebf6; color: #23406e; margin: 12px 16px 0; }
 .empty { text-align: center; color: var(--muted); margin-top: 40px; }
 
-/* Tag list grows to multiple columns when it has the whole screen. */
-@media (min-width: 640px) and (max-width: 1023px) {
+/* Tag list: columns follow the width of the list pane. */
+.shell__list { container: list / inline-size; }
+.shell--split .tag-grid { gap: 14px; }
+.shell--split .list-body { padding: 14px 12px 24px; }
+.shell--split .tag-card { padding: 10px 14px 12px; }
+.shell--split .tag-card__job { margin-top: 8px; gap: 4px 16px; font-size: 16px; }
+.shell--split .tag-card__meta { margin-top: 12px; gap: 6px; font-size: 13px; flex-wrap: nowrap; justify-content: space-between; }
+.shell--split .tag-card__meta svg { width: 16px; height: 16px; }
+.shell--split .status-pill { min-width: 0; padding: 1px 10px; font-size: 13px; }
+.shell--split .tag-card__row { gap: 8px; }
+.tag-card__num { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shell--split .tag-card__num { min-width: 0; flex: 0 1 auto; }
+@container list (min-width: 600px) {
   .tag-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
   .list-head { padding-left: 24px; padding-right: 24px; }
   .list-body { padding: 24px; }
   .add-tag { width: 100%; margin: 0; }
 }
-@media (min-width: 1024px) {
-  .tag-grid { gap: 16px; }
+@container list (min-width: 960px) {
+  .tag-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* ---------- Drawer ---------- */
@@ -207,16 +220,22 @@ input[type='number']::-webkit-inner-spin-button { opacity: 0.4; }
 .expense-row .amount { max-width: 150px; text-align: center; min-height: 42px; }
 .expense-total { text-align: right; padding: 4px 48px 0 0; color: var(--ink-2); }
 
-@media (min-width: 768px) {
-  .line-grid { grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr)); }
-  .line-grid:has(.expense-row) { grid-template-columns: minmax(0, 1fr); }
+/* Cost lines: one column on narrow panes, two when the pane has room. */
+.tab-body { container: tab / inline-size; }
+@container tab (min-width: 800px) {
+  .line-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .line-grid:has(.expense-row) { grid-template-columns: minmax(0, 1fr); max-width: 640px; }
 }
 
 .form-card { background: #fff; border-radius: var(--radius); padding: 18px 16px; box-shadow: var(--shadow); }
 .form-grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
 .field--wide { grid-column: 1 / -1; }
-@media (max-width: 420px) {
+@container tab (max-width: 420px) {
   .form-grid { grid-template-columns: 1fr; }
+}
+@container tab (min-width: 860px) {
+  /* Tag #, date, customer and PM email on one row. */
+  .form-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 20px; grid-auto-flow: row dense; }
 }
 
 /* Files */
@@ -247,7 +266,7 @@ input[type='number']::-webkit-inner-spin-button { opacity: 0.4; }
 .sig-pad.is-disabled { cursor: default; }
 .sig-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
 .sig-name { margin: 8px 0 0; color: var(--ink-2); font-size: 16px; }
-@media (min-width: 768px) {
+@container tab (min-width: 600px) {
   .sig-pad { height: 260px; }
   .sign > * { max-width: 640px; }
 }
@@ -255,8 +274,24 @@ input[type='number']::-webkit-inner-spin-button { opacity: 0.4; }
 /* Footer action bar */
 .action-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px calc(12px + var(--safe-b)); background: var(--panel); border-top: 1px solid #d9dbde; }
 .action-bar .btn { min-width: 110px; }
-@media (min-width: 1024px) {
-  .action-bar { padding-left: max(16px, calc((100% - 980px) / 2)); padding-right: max(16px, calc((100% - 980px) / 2)); }
+.shell--split .action-bar { padding-left: max(16px, calc((100% - 980px) / 2)); padding-right: max(16px, calc((100% - 980px) / 2)); }
+
+/* Short screens (a phone on its side): the whole tag page scrolls, and the
+   header, tabs and action bar shrink so the form gets the room. */
+@media (max-height: 499.98px) {
+  .detail-page { overflow-y: auto; display: block; }
+  .detail-page .tab-body { overflow: visible; }
+  .detail-head { padding: 8px 12px; }
+  .detail-head__title h2 { font-size: 17px; }
+  .tabs { padding: 6px 8px; position: sticky; top: 0; z-index: 5; }
+  .tab { padding: 5px 6px; font-size: 15px; }
+  .subtabs { padding: 8px 10px 2px; }
+  .subtab { padding: 5px 10px; }
+  .action-bar { position: sticky; bottom: 0; padding-top: 8px; padding-bottom: calc(8px + var(--safe-b)); }
+  .action-bar .btn { min-height: 38px; }
+  .list-head { padding-top: 8px; }
+  .list-head__filters { margin: 8px 0; }
+  .list-head__logo { width: 72px; }
 }
 
 /* Toast */
@@ -273,7 +308,9 @@ input[type='number']::-webkit-inner-spin-button { opacity: 0.4; }
 .btn--ghost:hover:not(:disabled) { background: #f7e1e1; }
 .banner--warn { background: #fff4dc; color: #6b4a00; }
 .banner.inset { margin: 12px 16px 0; }
-.tag-card__source { position: absolute; right: 16px; bottom: 14px; font-size: 11px; color: var(--muted); letter-spacing: 0.02em; }
+.tag-card__source { font-size: 11px; color: var(--muted); letter-spacing: 0.02em; border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; white-space: nowrap; }
+.tag-card__row .tag-card__source { margin-left: auto; }
+.tag-card__row .tag-card__source + .tag-card__chev { margin-left: 4px; }
 .boot { height: 100%; display: grid; place-content: center; padding: 24px; }
 .spinner { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--muted); padding: 32px; }
 .spinner__dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #c9ccd1; border-top-color: var(--navy); animation: spin 0.8s linear infinite; }

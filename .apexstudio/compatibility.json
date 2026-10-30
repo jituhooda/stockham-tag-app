@@ -21,9 +21,9 @@
     "kubernetes": ">=1.27"
   },
   "viewports": {
-    "phone": "360-767px",
-    "tablet": "768-1023px (2-column list)",
-    "desktop": ">=1024px (list + detail)"
+    "phone": "<768px wide, or <500px tall (phone on its side): one screen at a time",
+    "tablet": "768-1199px: tag list (320px) beside the open tag",
+    "desktop": ">=1200px: wider list, multi-column forms"
   },
   "apis": {
     "emachine": {

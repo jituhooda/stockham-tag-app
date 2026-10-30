@@ -7,7 +7,7 @@ one responsive web app for phones, tablets and desktop browsers.
 
 | Phone | Tablet | Desktop |
 | --- | --- | --- |
-| one screen at a time, like the mockups | tag list in two columns | list on the left, open tag on the right |
+| one screen at a time, like the mockups (also works on its side) | tag list on the left, open tag on the right | the same, with roomier forms and a wider list |
 
 ## Quick start
 

@@ -83,6 +83,7 @@ function TagCard({ tag }) {
       <div className="tag-card__row">
         <span className="tag-card__num">{tag.tagNumber || '—'}</span>
         <StatusPill status={tag.status} />
+        {tag.source === 'emachine' && <span className="tag-card__source" title="Read from eMachine; saved here on first edit">eMachine</span>}
         <IconChevronRight className="tag-card__chev" size={20} />
       </div>
       <div className="tag-card__job">
@@ -97,7 +98,6 @@ function TagCard({ tag }) {
         <span title="Equipment"><IconWrench size={18} />{tag.counts.equipment}</span>
         <span title="Expenses"><IconDollar size={18} />{tag.counts.expense}</span>
       </div>
-      {tag.source === 'emachine' && <span className="tag-card__source">eMachine</span>}
     </NavLink>
   );
 }
