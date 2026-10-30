@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- GitHub Actions CI (`.github/workflows/ci.yml`): export validation, backend and
+  cross-cutting tests on SQLite and PostgreSQL, frontend tests and build,
+  browser end-to-end tests, Docker image builds with an API smoke test.
+
 ## [1.0.0] - 2026-10-30
 
 ### Added

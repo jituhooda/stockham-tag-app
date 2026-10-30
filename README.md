@@ -69,6 +69,10 @@ cd tests/e2e && npm install && npm test        # browser tests against a running
 
 Add `TEST_DATABASE_URL` / `TEST_POSTGRES_URL` to run the database tests on PostgreSQL.
 
+CI (`.github/workflows/ci.yml`) runs all of the above on every pull request and
+push to `main`, with the backend suites on both SQLite and PostgreSQL, and also
+builds and smoke-tests the Docker images.
+
 ## Documentation
 
 [Architecture](docs/architecture.md) · [API](docs/api.md) ·
