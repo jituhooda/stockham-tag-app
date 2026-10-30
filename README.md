@@ -27,6 +27,16 @@ docker compose up -d --build                              # read-only
 VITE_EMACHINE_WRITES=true docker compose up -d --build    # saving enabled
 ```
 
+## Install on a phone
+
+The app is a PWA, so it opens full-screen like a native app (needs HTTPS, e.g. ngrok or your own host).
+Send people **`/install`** (e.g. `https://your-host/install`): it shows a QR code, a share link and
+illustrated steps for iPhone and Android, and needs no sign-in. Set `VITE_PUBLIC_URL` so the QR code
+uses your public address.
+
+- **iPhone/iPad:** open the site in **Safari** → Share → **Add to Home Screen**.
+- **Android:** open it in **Chrome** → menu (⋮) → **Install app** (or **Add to Home screen**).
+
 ## How it works
 
 ```
@@ -45,7 +55,8 @@ browser ──▶ nginx (React app) ──/datamodel──▶ eMachine
 | --- | --- |
 | ✅ Tag list, details, labor, material, equipment, expenses | read from eMachine |
 | ✅ Edit details; add and change cost lines | saved to eMachine |
-| ⏳ Create a tag, remove a saved line, files, issues, sign/submit | **disabled** until their eMachine APIs are captured |
+| 🧪 Create a tag (Add Tag → pick a job) | wired with a best-guess insert; not yet confirmed against eMachine |
+| ⏳ Remove a saved line, files, issues, sign/submit | **disabled** until their eMachine APIs are captured |
 
 ## Repository layout
 

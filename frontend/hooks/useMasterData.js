@@ -17,6 +17,9 @@ function load(key, fetcher) {
 
 export const clearMasterDataCache = () => cache.clear();
 
+/** Start loading a list early so it is ready when a screen asks for it. */
+export const preloadMasterData = (kind) => load(kind, apexApi.master[kind]).catch(() => {});
+
 /**
  * Reference list from eMachine: employees, materials, equipment, expenses,
  * trades, issues, or jobs (pass divisions).

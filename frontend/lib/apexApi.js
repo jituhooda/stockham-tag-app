@@ -4,6 +4,7 @@
  * to the app's shapes and turns edits into the smallest set of writes.
  */
 import { apexConfig } from './apexConfig';
+import { formaProjectExists } from './forma';
 import { ApiError, insertedId, query, runWrites, sqlInt, sqlString, writeRequest } from './apexHttp';
 import { isoDate, labelOf, num, pick, text, truthy } from '../services/fields';
 import { NEW_TAG_ID, fixed, lineKey, newTag, plain } from '../services/tagModel';
@@ -175,7 +176,7 @@ export const apexApi = {
         .map((r) => ({ id: text(r, 'Id'), employee: text(r, 'Employee'), name: text(r, 'EmployeeName') || text(r, 'Employee'), division: text(r, 'Division') }))
         .filter((e) => e.id)
         .sort((a, b) => a.name.localeCompare(b.name)),
-    trades: async () => unique((await query('trades')).map((r) => ({ id: text(r, 'Id'), label: text(r, 'TradeName') || labelOf(r) }))),
+    trades: async () => unique((await query('trades')).map((r) => ({ id: text(r, 'Id'), label: text(r, 'display_name') || text(r, 'TradeName') || labelOf(r) }))),
     materials: async () => unique((await query('materials')).map(masterItem)),
     equipment: async () => unique((await query('equipment')).map(masterItem)),
     expenses: async () => unique((await query('expenses')).map(masterItem)),
@@ -191,6 +192,11 @@ export const apexApi = {
         address: text(r, 'Address', 'JobAddress'),
         pmEmail: text(r, 'PMEmail', 'PM_Email', 'ProjectManagerEmail'),
       }));
+    },
+    /** Fresh customer / PM email / address for one job (used when a tag is started). */
+    jobDetails: async (jobNo) => {
+      const [r] = await query('jobDetails', { jobNo: sqlString(String(jobNo).slice(0, 100)) });
+      return r ? { customerId: text(r, 'CustomerID', 'CustomerId'), pmEmail: text(r, 'PMEmail'), address: text(r, 'Address') } : null;
     },
     division: async (employee) => {
       const rows = await query('division', { employee: sqlString(String(employee).slice(0, 100)) });
@@ -230,11 +236,18 @@ export const apexApi = {
       return apexApi.tags.get(form.id);
     },
 
-    /** Create a tag and its lines. Disabled until the insert API is confirmed (features.createTags). */
+    /**
+     * Add Tag ✓: the job must exist as a project in Autodesk Forma. If so, returns the job's
+     * fresh details for the new tag; if not, { found: false } and no tag is started.
+     */
+    prepareNew: async (job) => {
+      if (!(await formaProjectExists(job.jobNo))) return { found: false };
+      const details = await apexApi.master.jobDetails(job.jobNo).catch(() => null);
+      return { found: true, details };
+    },
+
+    /** Create a tag and its lines. */
     create: async (form) => {
-      if (!apexConfig.features.createTags) {
-        throw new ApiError('Creating new tags in eMachine isn’t connected yet. Edit an existing tag instead.');
-      }
       if (!form.tagNumber.trim()) throw new ApiError('Enter a tag number on the Details tab');
       const [res] = await runWrites([writeRequest('tags', headerFields(form))]);
       let id = insertedId(res);

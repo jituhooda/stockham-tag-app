@@ -25,6 +25,16 @@ export const emptyMaterial = () => ({ key: lineKey(), id: '', materialId: '', de
 export const emptyEquipment = () => ({ key: lineKey(), id: '', equipmentId: '', description: '', qty: '' });
 export const emptyExpense = () => ({ key: lineKey(), id: '', expenseId: '', description: '', amount: '' });
 
+/** The tag fields that come from a job row (master data). */
+export const jobFields = (j, fallbackEmail = '') => ({
+  jobNo: j.jobNo,
+  jobName: j.jobName,
+  customerId: j.customerId,
+  customerName: j.customerName,
+  address: j.address,
+  pmEmail: j.pmEmail || fallbackEmail,
+});
+
 export function newTag() {
   return {
     id: NEW_TAG_ID,

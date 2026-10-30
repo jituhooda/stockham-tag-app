@@ -33,5 +33,7 @@ export const IconPaperclip = (p) => (<svg {...base(p)}><path d="m20 11-8.5 8.5a5
 export const IconEraser = (p) => (<svg {...base(p)}><path d="m3 15 9-9 7 7-6 6H8z" /><path d="m8 10 7 7M13 20h8" /></svg>);
 export const IconFile = (p) => (<svg {...base(p)}><path d="M6 3h8l5 5v13H6z" /><path d="M14 3v5h5" /></svg>);
 export const IconRefresh = (p) => (<svg {...base(p)}><path d="M20 11a8 8 0 0 0-14.7-3.5M4 4v4h4M4 13a8 8 0 0 0 14.7 3.5M20 20v-4h-4" /></svg>);
+export const IconPin = (p) => (<svg {...base(p)}><path d="M12 21s-6.5-5.4-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.6 12 21 12 21z" /><circle cx="12" cy="10.5" r="2.4" /></svg>);
 export const IconClose = (p) => (<svg {...base(p)}><path d="M6 6l12 12M18 6 6 18" /></svg>);
+export const IconCheck = (p) => (<svg {...base(p)}><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>);
 export const IconAlert = (p) => (<svg {...base(p)}><path d="M12 4 2.5 20h19z" /><path d="M12 10v4M12 17h.01" /></svg>);

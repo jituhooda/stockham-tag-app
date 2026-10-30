@@ -98,9 +98,6 @@
         "sendForSignature": {
           "type": "boolean"
         },
-        "createTags": {
-          "type": "boolean"
-        },
         "deleteLines": {
           "type": "boolean"
         },
@@ -128,6 +125,35 @@
       "properties": {
         "$schema": {
           "type": "string"
+        },
+        "forma": {
+          "type": "object",
+          "required": [
+            "apiBase",
+            "accountId",
+            "projectsPath",
+            "jobFilter"
+          ],
+          "properties": {
+            "comment": {
+              "type": "string"
+            },
+            "apiBase": {
+              "type": "string",
+              "format": "uri"
+            },
+            "accountId": {
+              "type": "string"
+            },
+            "projectsPath": {
+              "type": "string",
+              "pattern": "\\{accountId\\}"
+            },
+            "jobFilter": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
         },
         "emachine": {
           "type": "object",

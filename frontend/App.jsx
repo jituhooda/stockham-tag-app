@@ -1,5 +1,6 @@
 import { RouterProvider } from 'react-router-dom';
 import { ToastProvider } from './components/ui';
+import { InstallPage } from './pages/InstallPage';
 import { SignInPage } from './pages/SignInPage';
 import { router } from './routes/router';
 import { AppProvider, useApp } from './state/AppContext';
@@ -16,6 +17,8 @@ function Gate() {
 }
 
 export function App() {
+  // The install guide is public: it must work before anyone has signed in.
+  if (window.location.pathname.replace(/\/$/, '') === '/install') return <InstallPage />;
   return (
     <ToastProvider>
       <AppProvider>

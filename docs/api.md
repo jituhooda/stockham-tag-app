@@ -16,8 +16,21 @@ the existing eMachine Tags app.
 | `tagLabor`, `tagMaterials`, `tagEquipment`, `tagExpenses` | A tag's cost lines (with master descriptions) |
 | `employees`, `trades`, `materials`, `equipment`, `expenses` | Pickers |
 | `division`, `jobs` | Your division, and that division's jobs |
+| `jobDetails` | A job's customer id, PM email and address (when a tag is started) |
 
 Parameters are inserted safely: ids must be integers, text is quoted and escaped.
+
+## Adding a tag: Autodesk Forma check
+
+Tapping ✓ in the Add Tag dialog runs `jobDetails`, `trades` and then:
+
+`GET https://developer.api.autodesk.com/construction/admin/v1/accounts/{accountId}/projects?filter[jobNumber]=<job no>`
+with `Authorization: Bearer <Forma token>` (called straight from the browser; Autodesk allows it).
+The tag form opens only if `results` is non-empty; otherwise the app shows
+"Could not find project <job no> in Autodesk Forma. Contact the Office." and returns to the list.
+A rejected or missing token is an error message, never "no project". Settings: `forma` in
+`config/integrations.config.json` and `VITE_FORMA_TOKEN` in `frontend/.env.local`. The token is
+short-lived (about an hour) and, like any `VITE_*` value, visible to anyone who loads the site.
 
 ## Writes
 
@@ -25,7 +38,7 @@ Parameters are inserted safely: ids must be integers, text is quoted and escaped
 
 | Table | Insert (no `Id`) | Update (`Id=…`) |
 | --- | --- | --- |
-| `tags` | not connected yet | `status, description, tag_date, IsPremium, JobNo, JobName, CustomerID, PMEmail, JobAddress` (changed ones only) |
+| `tags` | `status, description, tag_date, IsPremium, JobNo, JobName, CustomerID, PMEmail, JobAddress, tag_number` (best guess, not captured) | `status, description, tag_date, IsPremium, JobNo, JobName, CustomerID, PMEmail, JobAddress` (changed ones only) |
 | `tag_labor` | `tag_id, employee_id, employee_name, trade_id, regularhours, overtime, doubletime` | changed fields |
 | `tag_materials` | `tag_id, material_id, qty, length` | changed fields |
 | `tag_equipment` | `tag_id, equipment_id, qty` (inferred) | changed fields |

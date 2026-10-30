@@ -10,9 +10,9 @@ export default defineConfig(({ mode }) => {
   const proxy = { '/datamodel': { target, changeOrigin: true, secure: true } };
   return {
     plugins: [react()],
-    server: { host: true, port: 5173, proxy, fs: { allow: ['..'] } },
-    preview: { host: true, port: 4173, proxy },
+    server: { host: true, port: 5173, proxy, fs: { allow: ['..'] }, allowedHosts: ['aziro.ngrok.app'] },
+    preview: { host: true, port: 4173, proxy, allowedHosts: ['aziro.ngrok.app'] },
     build: { outDir: 'dist', sourcemap: true },
-    test: { environment: 'node', include: ['tests/**/*.test.{js,jsx}'] },
+    test: { environment: 'node', include: ['tests/**/*.test.{js,jsx}'], env: { VITE_EMACHINE_TOKEN: '', VITE_FORMA_TOKEN: 'test-forma-token' } },
   };
 });

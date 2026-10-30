@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { IconAlert, IconBox, IconCalendar, IconChevronRight, IconDollar, IconMenu, IconPlus, IconUsers, IconWrench } from '../components/icons';
 import { MenuDrawer } from '../components/MenuDrawer';
-import { Banner, Logo, StatusPill, useToast } from '../components/ui';
+import { NewTagDialog } from '../components/NewTagDialog';
+import { Banner, Logo, StatusPill } from '../components/ui';
 import { tagPath } from '../routes/router';
 import { NEW_TAG_ID } from '../services/tagModel';
 import { useApp } from '../state/AppContext';
@@ -12,11 +13,11 @@ const BASE_STATUSES = ['Draft', 'Submitted', 'Signed', 'Approved', 'Rejected'];
 
 export function TagListPage() {
   const { config } = useApp();
-  const toast = useToast();
   const { items, loading, error, refresh } = useTagList();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('All');
   const [menu, setMenu] = useState(false);
+  const [adding, setAdding] = useState(false);
   const navigate = useNavigate();
 
   const statuses = useMemo(() => [...new Set([...BASE_STATUSES, ...items.map((t) => t.status).filter(Boolean)])], [items]);
@@ -50,13 +51,7 @@ export function TagListPage() {
             {statuses.map((s) => <option key={s}>{s}</option>)}
           </select>
         </div>
-        <button
-          className="add-tag"
-          aria-disabled={!config.features.createTags}
-          onClick={() => config.features.createTags
-            ? navigate(tagPath(NEW_TAG_ID))
-            : toast('Creating new tags in eMachine isn’t connected yet. Open an existing tag to edit it.', 'error')}
-        >
+        <button className="add-tag" onClick={() => setAdding(true)}>
           <IconPlus size={22} /> Add Tag
         </button>
       </header>
@@ -77,6 +72,15 @@ export function TagListPage() {
       </div>
 
       <MenuDrawer open={menu} onClose={() => setMenu(false)} />
+      {adding && (
+        <NewTagDialog
+          onCancel={() => setAdding(false)}
+          onConfirm={(job) => {
+            setAdding(false);
+            navigate(tagPath(NEW_TAG_ID), { state: { job } });
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
-import { ActionBar, SaveButton, SearchSelect } from '../../components/ui';
+import { IconPin } from '../../components/icons';
+import { ActionBar, SaveButton, SearchSelect, StatusPill } from '../../components/ui';
 import { useMasterData } from '../../hooks/useMasterData';
-import { NEW_TAG_ID } from '../../services/tagModel';
+import { NEW_TAG_ID, jobFields } from '../../services/tagModel';
 import { useApp } from '../../state/AppContext';
 
 export function DetailsTab({ tag, edit, save, readOnly, busy }) {
@@ -14,6 +15,8 @@ export function DetailsTab({ tag, edit, save, readOnly, busy }) {
   );
   const jobLabel = tag.jobNo || tag.jobName ? [tag.jobNo, tag.jobName].filter(Boolean).join(' : ') : '';
   const isNew = tag.id === NEW_TAG_ID;
+
+  if (isNew) return <NewTagDetails tag={tag} edit={edit} save={save} readOnly={readOnly} busy={busy} />;
 
   return (
     <>
@@ -33,7 +36,7 @@ export function DetailsTab({ tag, edit, save, readOnly, busy }) {
                 onChange={(o) => {
                   const j = jobs.data[Number(o.value)];
                   if (!j) return;
-                  edit({ jobNo: j.jobNo, jobName: j.jobName, customerId: j.customerId, customerName: j.customerName, address: j.address, pmEmail: j.pmEmail || tag.pmEmail });
+                  edit(jobFields(j, tag.pmEmail));
                 }}
               />
             </div>
@@ -77,6 +80,64 @@ export function DetailsTab({ tag, edit, save, readOnly, busy }) {
               </label>
             )}
           </div>
+        </div>
+      </div>
+      {!readOnly && (
+        <ActionBar>
+          <SaveButton onClick={() => save()} busy={busy} />
+        </ActionBar>
+      )}
+    </>
+  );
+}
+
+/** A brand-new tag: the job was chosen in the Add Tag dialog, so it is shown, not edited. */
+function NewTagDetails({ tag, edit, save, readOnly, busy }) {
+  const { config, user, settings } = useApp();
+  const jobLabel = [tag.jobNo, tag.jobName].filter(Boolean).join(' : ');
+  const createdBy = settings.employeeName || user.name;
+
+  return (
+    <>
+      <div className="tab-body">
+        <div className="nt">
+          <div className="nt__job">
+            <span className="nt__label">Job</span>
+            <strong className="nt__job-name">{jobLabel}</strong>
+            {tag.address && <span className="nt__address"><IconPin size={22} />{tag.address}</span>}
+          </div>
+
+          <div className="nt__row">
+            <label className="nt__label" htmlFor="nt-tag-number">Tag #</label>
+            <input id="nt-tag-number" className="nt__inline" value={tag.tagNumber} disabled={readOnly} placeholder="Enter Text"
+              onChange={(e) => edit({ tagNumber: e.target.value })} />
+            <StatusPill status={tag.status} />
+          </div>
+
+          <div className="nt__cols">
+            <label className="nt__stack">
+              <span className="nt__label">Date</span>
+              <input className="input" type="date" value={tag.tagDate || ''} disabled={readOnly} onChange={(e) => edit({ tagDate: e.target.value })} />
+            </label>
+            <div className="nt__stack">
+              <span className="nt__label">Created By</span>
+              <span className="nt__user">{createdBy.replace(/@/g, '@\u200b')}</span>
+            </div>
+          </div>
+
+          {config.features.premiumTime !== false && (
+            <fieldset className="nt__radios">
+              <legend className="sr-only">Type of work</legend>
+              <label><input type="radio" name="nt-work" checked={!tag.isPremium} disabled={readOnly} onChange={() => edit({ isPremium: false })} />Extra Work (Non-contract)</label>
+              <label><input type="radio" name="nt-work" checked={!!tag.isPremium} disabled={readOnly} onChange={() => edit({ isPremium: true })} />OT - Premium Time Only</label>
+            </fieldset>
+          )}
+
+          <label className="nt__stack nt__desc">
+            <span className="nt__label">Description of Work</span>
+            <textarea className="input textarea" value={tag.description} disabled={readOnly} placeholder="Enter Text"
+              onChange={(e) => edit({ description: e.target.value })} />
+          </label>
         </div>
       </div>
       {!readOnly && (

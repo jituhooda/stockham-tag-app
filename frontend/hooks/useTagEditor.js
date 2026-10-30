@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apexApi } from '../lib/apexApi';
+import { NEW_TAG_ID } from '../services/tagModel';
 
 /**
  * Loads one tag from eMachine and holds the user's unsaved edits.
  * `form` is the editable copy; `saved` is what eMachine last returned.
  */
-export function useTagEditor(id) {
+export function useTagEditor(id, initial) {
   const [saved, setSaved] = useState(null);
   const [form, setForm] = useState(null);
   const [dirty, setDirty] = useState(false);
@@ -23,12 +24,15 @@ export function useTagEditor(id) {
     apexApi.tags
       .get(id, ctrl.signal)
       .then((t) => {
-        setSaved(t);
-        setForm(t);
+        const start = id === NEW_TAG_ID && initial ? { ...t, ...initial } : t;
+        setSaved(start);
+        setForm(start);
       })
       .catch((e) => !ctrl.signal.aborted && setError(e))
       .finally(() => !ctrl.signal.aborted && setLoading(false));
     return () => ctrl.abort();
+    // `initial` only seeds a new tag on first load; later changes must not reload it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   /** Patch the form: an object, or a function of the current form. */

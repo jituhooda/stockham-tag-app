@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Link, NavLink, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, NavLink, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { IconBack, IconClose, IconMenu } from '../components/icons';
 import { MenuDrawer } from '../components/MenuDrawer';
 import { Spinner, StatusPill, useToast } from '../components/ui';
@@ -8,9 +8,8 @@ import { useTagEditor } from '../hooks/useTagEditor';
 import { useUnsavedChangesGuard } from '../hooks/useUnsavedChangesGuard';
 import { TAB_KEYS, tagPath } from '../routes/router';
 import { WritesDisabledError } from '../lib/apexHttp';
-import { isEditable } from '../services/tagModel';
+import { NEW_TAG_ID, isEditable } from '../services/tagModel';
 import { saveProblems, tabForProblem } from '../services/validation';
-import { useApp } from '../state/AppContext';
 import { useTagList } from '../state/TagListContext';
 import { CostTab } from './tabs/CostTab';
 import { DetailsTab } from './tabs/DetailsTab';
@@ -34,9 +33,9 @@ export function TagDetailPage() {
 
 function TagDetail({ id }) {
   const { tab = 'details', sub } = useParams();
-  const { writesEnabled } = useApp();
   const { refresh } = useTagList();
-  const editor = useTagEditor(id);
+  const { state } = useLocation();
+  const editor = useTagEditor(id, state?.job);
   const { split } = useLayout();
   const [menu, setMenu] = useState(false);
   const navigate = useNavigate();
@@ -89,6 +88,7 @@ function TagDetail({ id }) {
   }
 
   const tag = editor.form;
+  const isNew = tag.id === NEW_TAG_ID;
   const readOnly = !isEditable(tag);
   const props = { tag, editor, edit: editor.edit, save, follow, goTo, readOnly, sub, busy: editor.busy };
   const { Component } = TABS.find((t) => t.key === tab);
@@ -100,14 +100,22 @@ function TagDetail({ id }) {
         <button className="icon-btn icon-btn--light" onClick={() => navigate('/')} aria-label={split ? 'Close tag' : 'Back to tags'}>
           {split ? <IconClose size={26} /> : <IconBack size={30} />}
         </button>
-        <div className="detail-head__title">
-          <h2>
-            {tag.tagNumber || 'New Tag'}
-            {editor.dirty && <span className="unsaved-dot" title="Unsaved changes" />}
-          </h2>
-          <span>{[tag.jobName, tag.jobNo].filter(Boolean).join(' ') || 'No job selected'}</span>
-        </div>
-        <StatusPill status={tag.status} />
+        {isNew ? (
+          <div className="detail-head__title detail-head__title--job">
+            <span>{[tag.jobNo, tag.jobName].filter(Boolean).join(' : ') || 'No job selected'}</span>
+          </div>
+        ) : (
+          <>
+            <div className="detail-head__title">
+              <h2>
+                {tag.tagNumber}
+                {editor.dirty && <span className="unsaved-dot" title="Unsaved changes" />}
+              </h2>
+              <span>{[tag.jobName, tag.jobNo].filter(Boolean).join(' ') || 'No job selected'}</span>
+            </div>
+            <StatusPill status={tag.status} />
+          </>
+        )}
         {!split && (
           <button className="icon-btn icon-btn--light icon-btn--dim" aria-label="Open menu" onClick={() => setMenu(true)}>
             <IconMenu size={26} />
@@ -124,9 +132,6 @@ function TagDetail({ id }) {
       </nav>
 
       {readOnly && <div className="banner banner--info inset">This tag is {tag.status.toLowerCase()} and can no longer be edited.</div>}
-      {!readOnly && !writesEnabled && (
-        <div className="banner banner--warn inset">Read-only mode: Save shows what would be sent to eMachine but doesn’t send it.</div>
-      )}
 
       <Component {...props} />
       <MenuDrawer open={menu} onClose={() => setMenu(false)} />

@@ -35,7 +35,7 @@ database of its own: the browser reads and writes eMachine directly.
 | Add labor / material / equipment / expense lines | Saves (insert with `tag_id`) |
 | Change existing lines | Saves (update by `Id`, changed fields only) |
 | Remove a saved line | **Not connected**: delete API not captured; trash disabled for saved lines |
-| Create a new tag | **Not connected**: insert response (new Id) not captured; `features.createTags` |
+| Create a new tag | Add Tag → pick a job → fill in Details and save. The insert request is a best guess (not captured from the existing app); with saving off it is only logged to the console |
 | Files, Issues, Sign/Submit | **Not connected**: APIs not captured; screens explain this |
 
 `tag_equipment` saves use field names inferred from the equipment read query
