@@ -1,13 +1,11 @@
 import { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { IconBox, IconDollarBox, IconPlus, IconTrash, IconUsers } from '../../components/icons';
+import { apexConfig } from '../../lib/apexConfig';
 import { ActionBar, SaveButton, SearchSelect } from '../../components/ui';
 import { useMasterData } from '../../hooks/useMasterData';
 import { tagPath } from '../../routes/router';
 import { emptyEquipment, emptyExpense, emptyLabor, emptyMaterial } from '../../services/tagModel';
-
-
-
 
 const SUBS = [
   { key: 'labor', label: 'Labor' },
@@ -71,10 +69,14 @@ function Section({ icon, title, addLabel, onAdd, readOnly, children, empty }
   );
 }
 
-function DeleteBtn({ onClick, label, hidden }) {
+const DELETE_SAVED_NOTE = 'Removing lines already saved in eMachine isn’t connected yet';
+
+/** Trash button; disabled for lines already in eMachine until the delete API is wired. */
+function DeleteBtn({ onClick, label, hidden, line }) {
   if (hidden) return null;
+  const locked = !!line?.id && !apexConfig.features.deleteLines;
   return (
-    <button className="icon-btn trash" onClick={onClick} aria-label={label}>
+    <button className="icon-btn trash" onClick={onClick} aria-label={label} disabled={locked} title={locked ? DELETE_SAVED_NOTE : label}>
       <IconTrash size={28} />
     </button>
   );
@@ -152,14 +154,13 @@ function LaborSection(props) {
                 value={l.trade}
                 options={trades}
                 loading={tradeList.loading}
-                allowCustom
                 disabled={readOnly}
                 ariaLabel="Trade"
                 placeholder="Trade"
-                onChange={(o) => change(l.key, { trade: o.label })}
+                onChange={(o) => change(l.key, { tradeId: o.value, trade: o.label })}
               />
             </label>
-            <DeleteBtn hidden={readOnly} label="Remove labor line" onClick={() => remove(l.key)} />
+            <DeleteBtn hidden={readOnly} label="Remove labor line" line={l} onClick={() => remove(l.key)} />
           </div>
           <div className="line-card__nums">
             <NumField label="Regular" value={l.regular} readOnly={readOnly} onChange={(v) => change(l.key, { regular: v })} />
@@ -172,35 +173,19 @@ function LaborSection(props) {
   );
 }
 
-function DescriptionPicker({ value, options, loading, readOnly, onChange }
-
-) {
+/** Pick from the master list; eMachine stores the chosen row's Id. */
+function DescriptionPicker({ value, options, loading, readOnly, onChange }) {
   return (
-    <div className="desc-picker">
-      <SearchSelect
-        value={value}
-        options={options}
-        loading={loading}
-        allowCustom
-        disabled={readOnly}
-        ariaLabel="Description"
-        placeholder="Select or type"
-        onChange={(o) => onChange(o.label)}
-      />
-      {!readOnly && (
-        <button
-          className="icon-btn"
-          aria-label="Enter a description not in the list"
-          title="Enter a description not in the list"
-          onClick={() => {
-            const v = window.prompt('Description', value);
-            if (v?.trim()) onChange(v.trim());
-          }}
-        >
-          <IconPlus size={24} />
-        </button>
-      )}
-    </div>
+    <SearchSelect
+      value={value}
+      options={options}
+      loading={loading}
+      searchIcon
+      disabled={readOnly}
+      ariaLabel="Description"
+      placeholder="Search the list"
+      onChange={onChange}
+    />
   );
 }
 
@@ -219,9 +204,9 @@ function MaterialSection(props) {
             <label className="field grow">
               <span className="field-label">Description</span>
               <DescriptionPicker value={l.description} options={options} loading={list.loading} readOnly={readOnly}
-                onChange={(v) => change(l.key, { description: v })} />
+                onChange={(o) => change(l.key, { materialId: o.value, description: o.label })} />
             </label>
-            <DeleteBtn hidden={readOnly} label="Remove material" onClick={() => remove(l.key)} />
+            <DeleteBtn hidden={readOnly} label="Remove material" line={l} onClick={() => remove(l.key)} />
           </div>
           <div className="line-card__nums">
             <NumField label="Qty" value={l.qty} readOnly={readOnly} step="1" onChange={(v) => change(l.key, { qty: v })} />
@@ -256,11 +241,10 @@ function ExpenseSection(props) {
             value={l.description}
             options={options}
             loading={list.loading}
-            allowCustom
             disabled={readOnly}
             ariaLabel="Expense"
             placeholder="Expense"
-            onChange={(o) => change(l.key, { description: o.label, amount: l.amount || defaultAmount(o.label) })}
+            onChange={(o) => change(l.key, { expenseId: o.value, description: o.label, amount: l.amount || defaultAmount(o.label) })}
           />
           <input
             className="input amount"
@@ -278,7 +262,7 @@ function ExpenseSection(props) {
               if (e.target.value !== '' && Number.isFinite(n)) change(l.key, { amount: n.toFixed(2) });
             }}
           />
-          <DeleteBtn hidden={readOnly} label="Remove expense" onClick={() => remove(l.key)} />
+          <DeleteBtn hidden={readOnly} label="Remove expense" line={l} onClick={() => remove(l.key)} />
         </div>
       ))}
       {lines.length > 0 && (
@@ -305,9 +289,9 @@ function EquipmentSection(props) {
             <label className="field grow">
               <span className="field-label">Description</span>
               <DescriptionPicker value={l.description} options={options} loading={list.loading} readOnly={readOnly}
-                onChange={(v) => change(l.key, { description: v })} />
+                onChange={(o) => change(l.key, { equipmentId: o.value, description: o.label })} />
             </label>
-            <DeleteBtn hidden={readOnly} label="Remove equipment" onClick={() => remove(l.key)} />
+            <DeleteBtn hidden={readOnly} label="Remove equipment" line={l} onClick={() => remove(l.key)} />
           </div>
           <div className="line-card__nums">
             <NumField label="Qty" value={l.qty} readOnly={readOnly} step="1" onChange={(v) => change(l.key, { qty: v })} />

@@ -1,0 +1,16 @@
+[
+  {
+    "Id": 1,
+    "Amount": 35,
+    "description": "Parking"
+  },
+  {
+    "Id": 2,
+    "description": "Mileage"
+  },
+  {
+    "Id": 3,
+    "Amount": 120,
+    "description": "Dump Fee"
+  }
+]

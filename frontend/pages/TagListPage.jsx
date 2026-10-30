@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { IconAlert, IconBox, IconCalendar, IconChevronRight, IconDollar, IconMenu, IconPlus, IconUsers, IconWrench } from '../components/icons';
 import { MenuDrawer } from '../components/MenuDrawer';
-import { Banner, Logo, StatusPill } from '../components/ui';
+import { Banner, Logo, StatusPill, useToast } from '../components/ui';
 import { tagPath } from '../routes/router';
 import { NEW_TAG_ID } from '../services/tagModel';
 import { useApp } from '../state/AppContext';
@@ -11,8 +11,9 @@ import { useTagList } from '../state/TagListContext';
 const BASE_STATUSES = ['Draft', 'Submitted', 'Signed', 'Approved', 'Rejected'];
 
 export function TagListPage() {
-  const { config, can } = useApp();
-  const { items, warnings, loading, error, refresh } = useTagList();
+  const { config } = useApp();
+  const toast = useToast();
+  const { items, loading, error, refresh } = useTagList();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('All');
   const [menu, setMenu] = useState(false);
@@ -35,8 +36,8 @@ export function TagListPage() {
         <div className="list-head__top">
           <Logo className="list-head__logo" />
           <div className="list-head__title">
-            <h1>{config?.branding?.appTitle || 'Tags'}</h1>
-            <span>{config?.branding?.appSubtitle || 'Change Order'}</span>
+            <h1>{config.branding.appTitle || 'Tags'}</h1>
+            <span>{config.branding.appSubtitle || 'Change Order'}</span>
           </div>
           <button className="icon-btn" aria-label="Open menu" onClick={() => setMenu(true)}>
             <IconMenu size={28} />
@@ -49,11 +50,15 @@ export function TagListPage() {
             {statuses.map((s) => <option key={s}>{s}</option>)}
           </select>
         </div>
-        {can('tags:write') && (
-          <button className="add-tag" onClick={() => navigate(tagPath(NEW_TAG_ID))}>
-            <IconPlus size={22} /> Add Tag
-          </button>
-        )}
+        <button
+          className="add-tag"
+          aria-disabled={!config.features.createTags}
+          onClick={() => config.features.createTags
+            ? navigate(tagPath(NEW_TAG_ID))
+            : toast('Creating new tags in eMachine isn’t connected yet. Open an existing tag to edit it.', 'error')}
+        >
+          <IconPlus size={22} /> Add Tag
+        </button>
       </header>
 
       <div className="list-body">
@@ -62,7 +67,6 @@ export function TagListPage() {
             <IconAlert size={18} /> Couldn’t load tags: {error}
           </Banner>
         )}
-        {warnings.map((w) => <Banner key={w} kind="warn">{w}</Banner>)}
         {loading && !items.length && Array.from({ length: 3 }, (_, i) => <div key={i} className="tag-card skeleton" />)}
         {!loading && !error && !visible.length && (
           <p className="empty">{items.length ? 'No tags match your search.' : 'No tags yet. Tap “Add Tag” to create one.'}</p>
@@ -83,7 +87,6 @@ function TagCard({ tag }) {
       <div className="tag-card__row">
         <span className="tag-card__num">{tag.tagNumber || '—'}</span>
         <StatusPill status={tag.status} />
-        {tag.source === 'emachine' && <span className="tag-card__source" title="Read from eMachine; saved here on first edit">eMachine</span>}
         <IconChevronRight className="tag-card__chev" size={20} />
       </div>
       <div className="tag-card__job">

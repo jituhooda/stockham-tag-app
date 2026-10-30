@@ -1,5 +1,0 @@
-[
-  {"Id": 1, "Description": "Parking", "Amount": 35},
-  {"Id": 2, "Description": "Mileage"},
-  {"Id": 3, "Description": "Dump Fee", "Amount": 120}
-]

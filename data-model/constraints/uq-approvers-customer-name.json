@@ -1,9 +1,0 @@
-{
-  "name": "uq_approvers_customer_name",
-  "entity": "Approver",
-  "type": "unique",
-  "fields": [
-    "customer",
-    "name"
-  ]
-}

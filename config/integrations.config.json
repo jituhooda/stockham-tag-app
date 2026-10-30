@@ -1,24 +1,33 @@
 {
   "$schema": "./config.schema.json#/definitions/integrations",
   "emachine": {
-    "mode": "live",
-    "baseUrl": "https://emachine.instantar.io/datamodel/api/model_query",
-    "timeoutSeconds": 20,
-    "cacheTtlSeconds": 300,
-    "fixturesDir": "../database/fixtures/emachine",
+    "baseUrl": "https://emachine.instantar.io",
+    "queryPath": "/datamodel/api/model_query",
+    "tablePath": "/datamodel/api/{table}",
+    "timeoutSeconds": 30,
     "queries": {
+      "tags": "SELECT t.Id, t.tag_number, t.status, t.description, DATE(t.tag_date) AS tag_date, t.IsPremium, t.JobName, t.CustomerID, t.PMEmail, t.JobNo, t.JobAddress AS Address, DATE(t.LastModifiedDate) AS LastModifiedDate, (SELECT COUNT(*) FROM tag_labor tl WHERE tl.tag_id = t.Id) AS labor_count, (SELECT COUNT(*) FROM tag_materials tm WHERE tm.tag_id = t.Id) AS material_count, (SELECT COUNT(*) FROM tag_equipment te WHERE te.tag_id = t.Id) AS equipment_count, (SELECT COUNT(*) FROM tag_other_expenses toe WHERE toe.tag_id = t.Id) AS expense_count FROM tags t ORDER BY t.LastModifiedDate DESC",
+      "tag": "SELECT t.Id, t.tag_number, t.status, t.description, DATE(t.tag_date) AS tag_date, t.IsPremium, t.JobName, t.CustomerID, t.PMEmail, t.JobNo, t.JobAddress AS Address, DATE(t.LastModifiedDate) AS LastModifiedDate FROM tags t WHERE t.Id = {tagId}",
+      "tagByNumber": "SELECT t.Id FROM tags t WHERE t.tag_number = {tagNumber} ORDER BY t.Id DESC LIMIT 1",
+      "tagLabor": "SELECT tl.Id, tl.employee_id, tl.trade_id, TRIM(SUBSTRING_INDEX(tr.TradeName, ':', 1)) AS TradeName, COALESCE(CONCAT(e.First, ' ', e.Last), tl.employee_name) AS employee_name, tl.regularhours, tl.overtime, tl.doubletime FROM tag_labor tl LEFT JOIN trade tr ON tl.trade_id = tr.Id LEFT JOIN employees e ON tl.employee_id = e.Id WHERE tl.tag_id = {tagId}",
+      "tagMaterials": "SELECT tm.Id, tm.material_id, tm.tag_id, tm.qty, tm.length, tmm.description FROM tag_materials tm JOIN materials_master tmm ON tm.material_id = tmm.Id WHERE tm.tag_id = {tagId}",
+      "tagEquipment": "SELECT te.Id, te.qty, te.equipment_id, te.tag_id, em.description FROM tag_equipment te JOIN equipment_master em ON te.equipment_id = em.Id WHERE te.tag_id = {tagId}",
+      "tagExpenses": "SELECT toe.Id, toe.expenses_description, toe.qty, toe.expenses_id, em.description AS expense_type_description, em.CostCodeID FROM tag_other_expenses toe LEFT JOIN expenses_master em ON toe.expenses_id = em.Id WHERE toe.tag_id = {tagId}",
       "employees": "select Id,Employee,CONCAT(first, ' ', last) AS EmployeeName,Status,FEID,Division from employees where status='Active Status'",
-      "expenses": "select * from expenses_master",
+      "trades": "SELECT Id, TRIM(SUBSTRING_INDEX(TradeName, ':', 1)) AS TradeName FROM trade",
       "materials": "select * from materials_master",
       "equipment": "select * from equipment_master",
-      "laborRates": "select * from tag_labor_rates",
+      "expenses": "select * from expenses_master",
       "division": "select Division from employees where EMPLOYEE = {employee}",
-      "jobs": "select *, CONCAT(`JobNo`, ' : ',`JobName`) as CJobName from job where CustomerName !='' AND CustomerName is NOT NULL AND Division in ({divisions}) order by Address ASC",
-      "tags": "SELECT t.Id, t.tag_number, t.status, t.description, DATE(t.tag_date) AS tag_date, t.IsPremium, t.JobName, t.CustomerID, t.PMEmail, t.JobNo, t.JobAddress AS Address, DATE(t.LastModifiedDate) AS LastModifiedDate, (SELECT COUNT(*) FROM tag_labor tl WHERE tl.tag_id = t.Id) AS labor_count, (SELECT COUNT(*) FROM tag_materials tm WHERE tm.tag_id = t.Id) AS material_count, (SELECT COUNT(*) FROM tag_equipment te WHERE te.tag_id = t.Id) AS equipment_count, (SELECT COUNT(*) FROM tag_other_expenses toe WHERE toe.tag_id = t.Id) AS expense_count FROM tags t ORDER BY t.LastModifiedDate DESC",
-      "tagLabor": "select * from tag_labor where tag_id = {tag_id}",
-      "tagMaterials": "select * from tag_materials where tag_id = {tag_id}",
-      "tagEquipment": "select * from tag_equipment where tag_id = {tag_id}",
-      "tagExpenses": "select * from tag_other_expenses where tag_id = {tag_id}"
+      "jobs": "select *, CONCAT(`JobNo`, ' : ',`JobName`) as CJobName from job where CustomerName !='' AND CustomerName is NOT NULL AND Division in ({divisions}) order by Address ASC"
+    },
+    "writes": {
+      "comment": "POST {tablePath} as form fields. With Id: update that row. Without Id: insert (lines also send tag_id). Field lists come from captured requests; tag_equipment and tag inserts were not captured and are best guesses.",
+      "tags": ["status", "description", "tag_date", "IsPremium", "JobNo", "JobName", "CustomerID", "PMEmail", "JobAddress", "tag_number"],
+      "tag_labor": ["employee_id", "employee_name", "trade_id", "regularhours", "overtime", "doubletime"],
+      "tag_materials": ["material_id", "qty", "length"],
+      "tag_equipment": ["equipment_id", "qty"],
+      "tag_other_expenses": ["expenses_id", "qty"]
     }
   }
 }

@@ -2,140 +2,198 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://stockham.example/tags/config.schema.json",
   "title": "Stockham Tags configuration",
-  "description": "Schemas for each file in config/. Environment variables override these values at runtime (see docs/configuration.md).",
+  "description": "Schemas for each file in config/. The web app bundles these at build time; VITE_* variables override some values (see docs/configuration.md).",
   "definitions": {
     "app": {
       "type": "object",
-      "required": ["name", "version", "defaultDivisions"],
+      "required": [
+        "name",
+        "version",
+        "defaultDivisions"
+      ],
       "properties": {
-        "$schema": { "type": "string" },
-        "name": { "type": "string", "minLength": 1 },
-        "shortName": { "type": "string" },
-        "subtitle": { "type": "string" },
-        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+" },
-        "defaultDivisions": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
-        "tagNumberPrefix": { "type": "string", "pattern": "^[A-Za-z0-9]{1,10}$" },
-        "editableStatuses": { "type": "array", "items": { "enum": ["Draft", "Submitted", "Signed", "Approved", "Rejected"] } },
-        "timezone": { "type": "string" }
-      },
-      "additionalProperties": false
-    },
-    "database": {
-      "type": "object",
-      "required": ["dialect"],
-      "properties": {
-        "$schema": { "type": "string" },
-        "dialect": { "enum": ["sqlite", "postgres"] },
-        "sqlite": {
-          "type": "object",
-          "properties": {
-            "path": { "type": "string" },
-            "journalMode": { "enum": ["WAL", "DELETE", "TRUNCATE"] },
-            "busyTimeoutMs": { "type": "integer", "minimum": 0 }
-          },
-          "additionalProperties": false
+        "$schema": {
+          "type": "string"
         },
-        "postgres": {
-          "type": "object",
-          "properties": {
-            "host": { "type": "string" },
-            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
-            "database": { "type": "string" },
-            "user": { "type": "string" },
-            "sslMode": { "enum": ["disable", "allow", "prefer", "require", "verify-ca", "verify-full"] },
-            "poolSize": { "type": "integer", "minimum": 1 },
-            "maxOverflow": { "type": "integer", "minimum": 0 }
-          },
-          "additionalProperties": false
+        "name": {
+          "type": "string",
+          "minLength": 1
         },
-        "migrationsDir": { "type": "string" },
-        "runMigrationsOnStartup": { "type": "boolean" }
+        "shortName": {
+          "type": "string"
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+"
+        },
+        "defaultDivisions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "editableStatuses": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "Draft",
+              "Submitted",
+              "Signed",
+              "Approved",
+              "Rejected"
+            ]
+          }
+        },
+        "timezone": {
+          "type": "string"
+        }
       },
       "additionalProperties": false
     },
     "branding": {
       "type": "object",
-      "required": ["companyName", "appTitle", "colors"],
+      "required": [
+        "companyName",
+        "appTitle",
+        "colors"
+      ],
       "properties": {
-        "$schema": { "type": "string" },
-        "companyName": { "type": "string" },
-        "appTitle": { "type": "string" },
-        "appSubtitle": { "type": "string" },
+        "$schema": {
+          "type": "string"
+        },
+        "companyName": {
+          "type": "string"
+        },
+        "appTitle": {
+          "type": "string"
+        },
+        "appSubtitle": {
+          "type": "string"
+        },
         "colors": {
           "type": "object",
-          "additionalProperties": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
         }
       },
       "additionalProperties": false
     },
     "features": {
       "type": "object",
+      "description": "Switches for parts of the app whose eMachine save APIs are not wired yet. Turn one on only after its API is implemented.",
       "properties": {
-        "$schema": { "type": "string" },
-        "premiumTime": { "type": "boolean" },
-        "sendForSignature": { "type": "boolean" },
-        "attachments": { "type": "boolean" },
-        "issues": { "type": "boolean" },
-        "issuesQuery": { "type": "string", "description": "SQL run against eMachine to list issues; empty = typed in by hand" },
-        "allowCustomLineItems": { "type": "boolean" },
-        "showEmachineTags": { "type": "boolean" }
+        "$schema": {
+          "type": "string"
+        },
+        "premiumTime": {
+          "type": "boolean"
+        },
+        "sendForSignature": {
+          "type": "boolean"
+        },
+        "createTags": {
+          "type": "boolean"
+        },
+        "deleteLines": {
+          "type": "boolean"
+        },
+        "attachments": {
+          "type": "boolean"
+        },
+        "issues": {
+          "type": "boolean"
+        },
+        "submit": {
+          "type": "boolean"
+        },
+        "issuesQuery": {
+          "type": "string",
+          "description": "model_query SQL listing issues (read-only)"
+        }
       },
       "additionalProperties": false
     },
     "integrations": {
       "type": "object",
-      "required": ["emachine"],
+      "required": [
+        "emachine"
+      ],
       "properties": {
-        "$schema": { "type": "string" },
+        "$schema": {
+          "type": "string"
+        },
         "emachine": {
           "type": "object",
-          "required": ["mode", "baseUrl", "queries"],
+          "required": [
+            "baseUrl",
+            "queryPath",
+            "tablePath",
+            "queries",
+            "writes"
+          ],
           "properties": {
-            "mode": { "enum": ["live", "fixtures"] },
-            "baseUrl": { "type": "string", "format": "uri" },
-            "timeoutSeconds": { "type": "number", "exclusiveMinimum": 0 },
-            "cacheTtlSeconds": { "type": "integer", "minimum": 0 },
-            "fixturesDir": { "type": "string" },
+            "baseUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "queryPath": {
+              "type": "string",
+              "pattern": "^/"
+            },
+            "tablePath": {
+              "type": "string",
+              "pattern": "\\{table\\}"
+            },
+            "timeoutSeconds": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
             "queries": {
               "type": "object",
-              "required": ["employees", "expenses", "materials", "equipment", "laborRates", "division", "jobs", "tags", "tagLabor", "tagMaterials", "tagEquipment", "tagExpenses"],
-              "additionalProperties": { "type": "string", "minLength": 1 }
+              "required": [
+                "tags",
+                "tag",
+                "tagLabor",
+                "tagMaterials",
+                "tagEquipment",
+                "tagExpenses",
+                "employees",
+                "trades",
+                "materials",
+                "equipment",
+                "expenses",
+                "division",
+                "jobs"
+              ],
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "writes": {
+              "type": "object",
+              "properties": {
+                "comment": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
             }
           },
           "additionalProperties": false
         }
-      },
-      "additionalProperties": false
-    },
-    "security": {
-      "type": "object",
-      "required": ["authMode"],
-      "properties": {
-        "$schema": { "type": "string" },
-        "authMode": { "enum": ["none", "token"] },
-        "defaultRole": { "enum": ["viewer", "editor", "approver", "admin"] },
-        "corsOrigins": { "type": "array", "items": { "type": "string" } },
-        "uploads": {
-          "type": "object",
-          "properties": {
-            "maxBytes": { "type": "integer", "minimum": 1024 },
-            "allowedTypes": { "type": "array", "items": { "type": "string", "pattern": "^[\\w.+-]+/[\\w.+-]+$" } },
-            "dir": { "type": "string" }
-          },
-          "additionalProperties": false
-        },
-        "maxSignatureBytes": { "type": "integer", "minimum": 1024 }
-      },
-      "additionalProperties": false
-    },
-    "logging": {
-      "type": "object",
-      "properties": {
-        "$schema": { "type": "string" },
-        "level": { "enum": ["DEBUG", "INFO", "WARNING", "ERROR"] },
-        "format": { "enum": ["text", "json"] },
-        "accessLog": { "type": "boolean" },
-        "redactHeaders": { "type": "array", "items": { "type": "string" } }
       },
       "additionalProperties": false
     }

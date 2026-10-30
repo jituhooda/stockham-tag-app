@@ -1,8 +1,0 @@
-{
-  "name": "uq_tag_attachments_storage_key",
-  "entity": "Attachment",
-  "type": "unique",
-  "fields": [
-    "storage_key"
-  ]
-}

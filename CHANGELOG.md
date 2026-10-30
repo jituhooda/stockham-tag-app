@@ -6,10 +6,26 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **Frontend-only.** Removed the FastAPI backend, the SQLite/PostgreSQL database,
+  migrations and database tooling. The browser now reads and saves eMachine
+  directly (`model_query` for reads, `POST /datamodel/api/<table>` for saves),
+  through a same-origin `/datamodel` proxy in nginx and the Vite dev server.
+- Saves send only what changed, in the format captured from the existing
+  eMachine app; cost lines store master-record ids (employee, trade, material,
+  equipment, expense type). Trades come from eMachine's `trade` table.
+- Sign-in uses the user's eMachine access token.
+
 ### Added
-- GitHub Actions CI (`.github/workflows/ci.yml`): export validation, backend and
-  cross-cutting tests on SQLite and PostgreSQL, frontend tests and build,
-  browser end-to-end tests, Docker image builds with an API smoke test.
+- Read-only mode, on by default (`VITE_EMACHINE_WRITES`): Save logs the requests
+  it would send and sends nothing.
+- Browser tests against a mock eMachine that check the exact save requests.
+
+### Disabled until their eMachine APIs are known
+- Creating tags, removing saved lines, files, issues, and sign/submit.
+
+- GitHub Actions CI (`.github/workflows/ci.yml`): export validation, frontend
+  tests and build, browser tests against the mock eMachine, Docker image build.
 
 ### Changed
 - Layout now follows the device: phones show one screen at a time (and stay

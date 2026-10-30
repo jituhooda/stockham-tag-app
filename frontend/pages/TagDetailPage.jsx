@@ -7,7 +7,9 @@ import { useLayout } from '../hooks/useLayout';
 import { useTagEditor } from '../hooks/useTagEditor';
 import { useUnsavedChangesGuard } from '../hooks/useUnsavedChangesGuard';
 import { TAB_KEYS, tagPath } from '../routes/router';
+import { WritesDisabledError } from '../lib/apexHttp';
 import { isEditable } from '../services/tagModel';
+import { saveProblems, tabForProblem } from '../services/validation';
 import { useApp } from '../state/AppContext';
 import { useTagList } from '../state/TagListContext';
 import { CostTab } from './tabs/CostTab';
@@ -32,7 +34,7 @@ export function TagDetailPage() {
 
 function TagDetail({ id }) {
   const { tab = 'details', sub } = useParams();
-  const { can } = useApp();
+  const { writesEnabled } = useApp();
   const { refresh } = useTagList();
   const editor = useTagEditor(id);
   const { split } = useLayout();
@@ -51,6 +53,13 @@ function TagDetail({ id }) {
 
   /** `follow: false` lets a caller finish a multi-step action before the page moves to a new id. */
   const save = useCallback(async ({ quiet = false, follow: move = true } = {}) => {
+    const problems = saveProblems(editor.form);
+    if (problems.length) {
+      toast(problems[0], 'error');
+      const t = tabForProblem(problems[0]);
+      if (t) navigate(tagPath(id, t));
+      return null;
+    }
     try {
       const t = await editor.save();
       if (!quiet) toast('Saved');
@@ -58,23 +67,11 @@ function TagDetail({ id }) {
       if (move) follow(t);
       return t;
     } catch (e) {
-      toast(e.problems?.[0] || e.message, 'error');
+      // Read-only mode: the would-be requests are in the browser console.
+      toast(e instanceof WritesDisabledError ? 'Read-only mode: nothing was sent to eMachine (see the browser console for what would be).' : e.problems?.[0] || e.message, 'error');
       return null;
     }
-  }, [editor, toast, refresh, follow]);
-
-  const act = useCallback(async (fn, message) => {
-    try {
-      const t = await editor.act(fn);
-      if (message) toast(message);
-      refresh();
-      follow(t);
-      return t;
-    } catch (e) {
-      toast(e.problems?.[0] || e.message, 'error');
-      return null;
-    }
-  }, [editor, toast, refresh, follow]);
+  }, [editor, toast, refresh, follow, navigate, id]);
 
   if (!TAB_KEYS.includes(tab)) return <Navigate to={tagPath(id)} replace />;
   if (editor.loading || (!editor.form && !editor.error)) {
@@ -92,8 +89,8 @@ function TagDetail({ id }) {
   }
 
   const tag = editor.form;
-  const readOnly = !isEditable(tag, can);
-  const props = { tag, editor, edit: editor.edit, save, act, follow, goTo, readOnly, sub, busy: editor.busy };
+  const readOnly = !isEditable(tag);
+  const props = { tag, editor, edit: editor.edit, save, follow, goTo, readOnly, sub, busy: editor.busy };
   const { Component } = TABS.find((t) => t.key === tab);
 
   return (
@@ -126,8 +123,10 @@ function TagDetail({ id }) {
         ))}
       </nav>
 
-      {!tag.editable && <div className="banner banner--info inset">This tag is {tag.status.toLowerCase()} and can no longer be edited.</div>}
-      {tag.editable && !can('tags:write') && <div className="banner banner--info inset">You have view-only access.</div>}
+      {readOnly && <div className="banner banner--info inset">This tag is {tag.status.toLowerCase()} and can no longer be edited.</div>}
+      {!readOnly && !writesEnabled && (
+        <div className="banner banner--warn inset">Read-only mode: Save shows what would be sent to eMachine but doesn’t send it.</div>
+      )}
 
       <Component {...props} />
       <MenuDrawer open={menu} onClose={() => setMenu(false)} />

@@ -1,9 +1,0 @@
-{
-  "name": "ck_tag_signatures_mode",
-  "entity": "Signature",
-  "type": "check",
-  "fields": [
-    "mode"
-  ],
-  "expression": "mode IN ('in-person', 'send')"
-}

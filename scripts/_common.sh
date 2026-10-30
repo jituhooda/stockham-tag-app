@@ -19,12 +19,6 @@ warn()  { printf '\033[1;33m !\033[0m %s\n' "$*" >&2; }
 die()   { printf '\033[1;31m ✗\033[0m %s\n' "$*" >&2; exit 1; }
 need()  { command -v "$1" >/dev/null 2>&1 || die "$1 is required but not installed"; }
 
-# Run a backend Python module with the project's environment.
-backend_py() {
-  need uv
-  (cd "$ROOT/backend" && uv run --quiet python "$@")
-}
-
 compose() {
   need docker
   docker compose -f "$ROOT/docker-compose.yml" "$@"

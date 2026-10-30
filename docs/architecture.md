@@ -1,88 +1,73 @@
 # Architecture
 
+Stockham Tags is a **frontend-only** web app. There is no backend and no
+database of its own: the browser reads and writes eMachine directly.
+
 ```
  Phone / tablet / desktop browser
-            │  HTTPS
+            │
             ▼
- ┌──────────────────────┐      /api/*       ┌──────────────────────────┐   base64 SQL + Bearer   ┌────────────┐
- │ nginx (frontend)     │ ───────────────▶  │ FastAPI (backend)        │ ──────────────────────▶ │  eMachine  │
- │ React SPA, :8080     │                   │ apexapp, :8000           │   reference data, tags  │  model_query│
- └──────────────────────┘                   │                          │ ◀────────────────────── └────────────┘
-                                            │  SQLAlchemy Core         │
-                                            └──────┬─────────────┬─────┘
-                                                   ▼             ▼
-                                        SQLite / PostgreSQL   /data/attachments
+ ┌──────────────────────────────┐   /datamodel/*   ┌──────────────────────────┐
+ │ nginx (or the Vite dev server)│ ───────────────▶ │ eMachine                 │
+ │ serves the React app          │   same-origin    │ model_query (read)       │
+ └──────────────────────────────┘     proxy        │ /datamodel/api/<table>   │
+                                                    │ (insert / update)        │
+                                                    └──────────────────────────┘
 ```
 
-## Responsibilities
+- **Reads:** `GET /datamodel/api/model_query?query=<base64 SQL>`. Every query is
+  in `config/integrations.config.json`.
+- **Writes:** `POST /datamodel/api/<table>` with form fields. With `Id` the row is
+  updated (only the changed fields are sent); without `Id` a row is inserted
+  (cost lines also send `tag_id`).
+- **Proxy:** by default the app calls `/datamodel/...` on its own origin and
+  nginx forwards it to eMachine, so browsers never need eMachine to allow CORS.
+  Set `VITE_EMACHINE_BASE_URL` to call eMachine directly instead.
+- **Auth:** each request carries the user's eMachine bearer token (pasted on the
+  sign-in screen, or built in with `VITE_EMACHINE_TOKEN`).
 
-| Part | Owns |
+## What saves to eMachine today
+
+| Area | Status |
 | --- | --- |
-| **eMachine** | Employees, jobs, materials, equipment, expense types, labor rates, and tags created in eMachine. Read-only from this app. |
-| **Backend** | Tags created or edited here, their cost lines, issues, signatures, approvers and attachments; validation and the tag lifecycle; access control; the eMachine token. |
-| **Frontend** | Screens, form state, offline-friendly UX (images are downscaled before upload), layout for phone/tablet/desktop. Holds no secrets. |
+| Tag list, tag details, all four cost lists | Read from eMachine |
+| Edit tag details (description, date, premium, job, PM email, address) | Saves (update `tags`) |
+| Add labor / material / equipment / expense lines | Saves (insert with `tag_id`) |
+| Change existing lines | Saves (update by `Id`, changed fields only) |
+| Remove a saved line | **Not connected**: delete API not captured; trash disabled for saved lines |
+| Create a new tag | **Not connected**: insert response (new Id) not captured; `features.createTags` |
+| Files, Issues, Sign/Submit | **Not connected**: APIs not captured; screens explain this |
 
-## Tag lifecycle
+`tag_equipment` saves use field names inferred from the equipment read query
+(`equipment_id`, `qty`); confirm them with one captured save.
 
-```
-            save                     sign in person
-  (new) ──────────▶ Draft ─────────────────────────────▶ Signed ──┐
-                     │  ▲     send for signature                  │ approve
-                     │  └──── Submitted ◀───────────────          ├────────▶ Approved
-                     │            │                               │
-                     │            └──────────── reject ──────────▶ Rejected ──▶ (edit, submit again)
-```
+## Safety: read-only mode
 
-Draft and Rejected tags are editable; everything else is locked.
+Saving is **off unless `VITE_EMACHINE_WRITES=true`** at build time. While off,
+Save logs the exact requests it would send to the browser console and sends
+nothing. Tests always use a mock eMachine (`tests/e2e/helpers.mjs`) at
+`https://emachine.invalid`, so they can never touch real data.
 
-### eMachine tags
-
-The tag list merges this app's tags with tags read from eMachine (`id`
-`e<Id>`). Opening one shows eMachine's data and lines. The first save, upload or
-submit copies it into the local database (`tags.external_id` keeps the link),
-after which the local copy is shown instead. eMachine is never written to.
-
-## Backend layout (`backend/apexapp`)
-
-| Module | Purpose |
-| --- | --- |
-| `main.py` | App factory: middleware, error handlers, routers, startup migrations |
-| `config.py` | Loads `config/*.json`, applies environment overrides |
-| `auth.py`, `rbac.py` | Who is calling; what their role may do |
-| `api/routes/*` | HTTP layer only: parse, authorise, call a service |
-| `services/*` | Business rules: tag lifecycle, validation, master data, attachments |
-| `repositories/*`, `crud.py` | SQL via SQLAlchemy Core |
-| `schema.py` | Table definitions (mirrors `database/migrations`) |
-| `integrations/emachine*.py` | eMachine client (base64 queries, caching, fixtures) and row mapping |
-| `database/*` | Engine adapters, migration runner, checks, backup, transfer |
-| `middleware/*` | Request ids, security headers, metrics |
-| `jobs/*` | Cache warm-up, orphaned-file cleanup |
-
-## Frontend layout (`frontend/`)
+## Code layout (`frontend/`)
 
 | Folder | Purpose |
 | --- | --- |
 | `App.jsx`, `main.jsx` | Providers and the sign-in gate |
-| `routes/` | URL scheme: `/tags/:id/:tab/:sub?` |
-| `layouts/` | Shell: one pane on phones; list beside the open tag on tablets and desktops (`hooks/useLayout.js`) |
+| `lib/apexHttp.js` | eMachine client: base64 queries, form writes, read-only guard, token |
+| `lib/apexApi.js` | Tags and master data: row mapping and the save plan (`planSave`) |
+| `lib/apexConfig.js` | `config/*.json` + `VITE_*` settings |
+| `routes/`, `layouts/` | URLs (`/tags/:id/:tab/:sub?`) and the phone / tablet / desktop shell |
 | `pages/`, `pages/tabs/` | List, detail, and the Details / Cost / Files / Issues / Sign tabs |
-| `components/` | `ui.jsx` (shared widgets), `icons.jsx`, menu drawer |
-| `hooks/` | Master data cache, tag editor state, unsaved-changes guard |
-| `state/` | App config + user + device settings; tag list |
-| `services/` | Validation, form ↔ API conversion, image compression |
-| `lib/` | `apexConfig`, `apexHttp` (fetch wrapper), `apexApi` (endpoint map) |
+| `components/` | Shared widgets, icons, menu, "not connected" notice |
+| `hooks/` | Master-data cache, tag editor, layout, unsaved-changes guard |
+| `state/` | Signed-in user and device settings; the tag list |
+| `services/` | Field helpers, tag shape, validation, image helpers |
 
 ## Responsive layout
 
 | Device | Viewport | Layout |
 | --- | --- | --- |
-| Phone | narrower than 768px | One screen at a time, as in the mockups. Back arrow returns to the list. |
-| Phone on its side | shorter than 500px | Still one screen; header, tabs and Save bar shrink, tabs and Save stay pinned while the form scrolls. |
-| Tablet | 768–1199px | Tag list (320px) on the left, open tag on the right; ✕ closes the tag. |
-| Desktop | 1200px+ | Wider list (400–460px); Details fields four to a row, cost lines two to a row. |
-
-`hooks/useLayout.js` picks the layout with `matchMedia`; the shell gets
-`data-layout="phone|tablet|desktop"`. Inside each pane, CSS container queries
-size grids to the pane rather than the window, so the tag list shows 1–3
-columns depending on how much room it has. `tests/e2e/layout.test.mjs` checks
-each size.
+| Phone | narrower than 768px | One screen at a time, as in the mockups |
+| Phone on its side | shorter than 500px | One screen; compact header; tabs and Save pinned |
+| Tablet | 768–1199px | Tag list (320px) beside the open tag |
+| Desktop | 1200px+ | Wider list; Details four fields to a row; cost lines two to a row |

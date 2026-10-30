@@ -1,51 +1,35 @@
 # Deployment
 
-## Option 1 — Docker Compose (recommended)
+The app is static files plus a small nginx config that forwards `/datamodel/`
+to eMachine. Any host that can do that works.
+
+## Docker
 
 ```bash
-cp .env.example .env            # set EMACHINE_API_TOKEN, POSTGRES_PASSWORD, AUTH_MODE/AUTH_TOKENS
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-scripts/health-check.sh --url http://localhost:8000 --web http://localhost:8080
+docker compose up -d --build                         # read-only: Save sends nothing
+VITE_EMACHINE_WRITES=true docker compose up -d --build   # saving enabled
+scripts/health-check.sh --url http://localhost:8080
 ```
 
-That starts PostgreSQL, the API and nginx (web app on `:8080`). Put your TLS
-terminator or load balancer in front of `:8080`. Without the prod overlay the
-stack uses SQLite in the `app-data` volume.
+Put HTTPS in front of port 8080 (load balancer or reverse proxy), then enable
+HSTS in `infrastructure/nginx/security-headers.conf`.
 
-Add `--profile monitoring` to also run Prometheus on `:9090`.
-
-## Option 2 — single container
+## Without Docker
 
 ```bash
-docker build -f infrastructure/docker/single-container.Dockerfile -t stockham-tags .
-docker run -d -p 8000:8000 -v stockham-data:/data -e EMACHINE_API_TOKEN=… stockham-tags
+cd frontend && npm ci && VITE_EMACHINE_WRITES=true npm run build
 ```
 
-## Option 3 — Kubernetes
+Serve `frontend/dist/` with any web server that (1) falls back to
+`index.html` for unknown paths and (2) proxies `/datamodel/` to
+`https://emachine.instantar.io` (see `infrastructure/nginx/nginx.conf`).
+If you can't proxy, build with `VITE_EMACHINE_BASE_URL=https://emachine.instantar.io`;
+eMachine must then allow your site's origin.
 
-See [infrastructure/kubernetes/README.md](../infrastructure/kubernetes/README.md).
+## Going live checklist
 
-## Option 4 — without containers
-
-```bash
-scripts/setup.sh
-cd frontend && npm run build                     # static files in frontend/dist
-cd ../backend && STATIC_DIR=../frontend/dist uv run uvicorn apexapp.main:app --host 0.0.0.0 --port 8000
-```
-
-## Checklist
-
-- [ ] `EMACHINE_API_TOKEN` set (server side only).
-- [ ] `AUTH_MODE=token` with long random tokens in `AUTH_TOKENS`, **or** the app sits behind a proxy that authenticates users.
-- [ ] PostgreSQL for more than one API replica.
-- [ ] `/data` (attachments, SQLite) on persistent storage and backed up (`scripts/backup-db.sh` or the CronJob).
-- [ ] HTTPS in front; enable HSTS in `infrastructure/nginx/security-headers.conf`.
-- [ ] `CORS_ORIGINS` = the site's origin (only needed if the web app is on a different origin).
-- [ ] `/metrics` not exposed publicly.
-- [ ] Restore tested.
-
-## Upgrades
-
-Pull the new version, `docker compose … up -d --build`. The API applies
-pending migrations at startup (Kubernetes: the init container). Take a backup
-first.
+- [ ] Try a save on a test tag with read-only mode on: check the console output matches what eMachine expects.
+- [ ] Build with `VITE_EMACHINE_WRITES=true` and save that test tag for real; verify it in eMachine.
+- [ ] Decide on tokens: each user pastes their own (default) or a limited service token is built in.
+- [ ] HTTPS and HSTS.
+- [ ] `scripts/health-check.sh --emachine` (read-only `SELECT 1`) passes from the server.

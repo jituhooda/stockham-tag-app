@@ -4,8 +4,12 @@
   "shortName": "Tags",
   "subtitle": "Change Order",
   "version": "1.0.0",
-  "defaultDivisions": ["DFH"],
-  "tagNumberPrefix": "NEW",
-  "editableStatuses": ["Draft", "Rejected"],
+  "defaultDivisions": [
+    "DFH"
+  ],
+  "editableStatuses": [
+    "Draft",
+    "Rejected"
+  ],
   "timezone": "America/Los_Angeles"
 }

@@ -1,9 +1,0 @@
-{
-  "name": "ix_tag_expenses_tag_id",
-  "entity": "ExpenseLine",
-  "table": "tag_expenses",
-  "fields": [
-    "tag_id"
-  ],
-  "unique": false
-}

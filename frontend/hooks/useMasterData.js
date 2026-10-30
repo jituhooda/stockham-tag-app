@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apexApi } from '../lib/apexApi';
 
-// Shared across components and kept for the session; the backend caches eMachine too.
+// Shared across components and kept for the session (cleared by Refresh in the menu).
 const cache = new Map();
 
 function load(key, fetcher) {
@@ -18,7 +18,7 @@ function load(key, fetcher) {
 export const clearMasterDataCache = () => cache.clear();
 
 /**
- * Reference list from the backend: employees, materials, equipment, expenses,
+ * Reference list from eMachine: employees, materials, equipment, expenses,
  * trades, issues, or jobs (pass divisions).
  */
 export function useMasterData(kind, divisions) {

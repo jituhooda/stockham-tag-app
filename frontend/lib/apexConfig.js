@@ -1,16 +1,40 @@
 /**
- * Build-time settings for the web app. Everything else (branding, features,
- * the signed-in user) comes from the backend at runtime via /api/v1/config.
+ * App settings: config/*.json (bundled at build time) plus VITE_* overrides.
+ * There is no backend; the browser talks to eMachine directly.
  */
+import appConfig from '../../config/app.config.json';
+import branding from '../../config/branding.config.json';
+import features from '../../config/features.config.json';
+import integrations from '../../config/integrations.config.json';
+
 const env = import.meta.env;
+const emachine = integrations.emachine;
+const flag = (value, fallback) => (value == null || value === '' ? fallback : String(value).toLowerCase() === 'true');
 
 export const apexConfig = {
-  /** Backend origin; empty means same origin (nginx or the Vite proxy forwards /api). */
-  apiBaseUrl: (env.VITE_API_BASE_URL || '').replace(/\/$/, ''),
-  apiPrefix: '/api/v1',
-  requestTimeoutMs: Number(env.VITE_REQUEST_TIMEOUT_MS || 30000),
+  app: appConfig,
+  branding,
+  features,
+  emachine: {
+    // Empty base URL = same origin: nginx (or the Vite dev server) forwards /datamodel to eMachine.
+    baseUrl: (env.VITE_EMACHINE_BASE_URL ?? '').replace(/\/$/, ''),
+    queryPath: emachine.queryPath,
+    tablePath: emachine.tablePath,
+    queries: { ...emachine.queries, ...(features.issuesQuery ? { issues: features.issuesQuery } : {}) },
+    writes: emachine.writes,
+    timeoutMs: (emachine.timeoutSeconds || 30) * 1000,
+    /** Optional build-time token. Without it, users paste their own on the sign-in screen. */
+    token: env.VITE_EMACHINE_TOKEN || '',
+    /**
+     * Saving to eMachine is OFF unless VITE_EMACHINE_WRITES=true. While off, every
+     * save is logged to the console and nothing is sent.
+     */
+    writesEnabled: flag(env.VITE_EMACHINE_WRITES, false),
+  },
+  editableStatuses: appConfig.editableStatuses || ['Draft', 'Rejected'],
   storageKeys: {
-    token: 'stockham.token',
+    token: 'stockham.emachineToken',
     settings: 'stockham.settings.v2',
+    approvers: 'stockham.approvers.v1',
   },
 };

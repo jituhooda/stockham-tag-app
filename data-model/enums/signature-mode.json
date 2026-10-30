@@ -1,9 +1,0 @@
-{
-  "name": "SignatureMode",
-  "values": [
-    "in-person",
-    "send"
-  ],
-  "description": "How the approver signs.",
-  "storedIn": "tag_signatures.mode (CHECK)"
-}

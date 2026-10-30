@@ -1,9 +1,9 @@
 # Stockham Tags
 
 Change-order tags for **Stockham Construction**. Field staff record extra work
-on a job (labor, materials, equipment, other charges, photos and the issues it
-addresses), and the customer's approver signs on the device or by email. It is
-one responsive web app for phones, tablets and desktop browsers.
+on a job (labor, materials, equipment and other charges) against eMachine data.
+It is one responsive web app for phones, tablets and desktop browsers, with **no
+backend and no database**: it reads and saves eMachine directly.
 
 | Phone | Tablet | Desktop |
 | --- | --- | --- |
@@ -12,71 +12,68 @@ one responsive web app for phones, tablets and desktop browsers.
 ## Quick start
 
 ```bash
-scripts/setup.sh                 # installs dependencies, creates .env files, migrates SQLite
-scripts/start.sh --fixtures      # API :8000 + web :5173 with offline sample data
+scripts/setup.sh      # installs dependencies, creates .env files
+scripts/start.sh      # http://localhost:5173 — sign in with your eMachine access token
 ```
 
-Open http://localhost:5173. For real data, put the eMachine token in
-`backend/.env` (`EMACHINE_API_TOKEN=`) and run `scripts/start.sh`.
+**Saving to eMachine is off by default.** Save then logs the exact requests it
+would send to the browser console and sends nothing. When you've checked them,
+set `VITE_EMACHINE_WRITES=true` in `frontend/.env.local` and restart.
 
-With Docker:
+With Docker (nginx on http://localhost:8080):
 
 ```bash
-cp .env.example .env             # set EMACHINE_API_TOKEN
-docker compose up -d --build     # http://localhost:8080
+docker compose up -d --build                              # read-only
+VITE_EMACHINE_WRITES=true docker compose up -d --build    # saving enabled
 ```
 
 ## How it works
 
 ```
-browser ──▶ nginx (React app) ──/api──▶ FastAPI ──▶ SQLite / PostgreSQL
-                                           └──────▶ eMachine (reference data, read-only)
+browser ──▶ nginx (React app) ──/datamodel──▶ eMachine
+                                  GET  model_query?query=<base64 SQL>   (reads)
+                                  POST /datamodel/api/<table>           (saves)
 ```
 
-- **Reference data** (employees, jobs, materials, equipment, expense types,
-  labor trades) comes from eMachine through the backend, which base64-encodes
-  the SQL and adds the bearer token. The token never reaches the browser.
-- **Tags** are stored in this app's database. Tags that exist only in eMachine
-  appear in the list too, and are copied in the first time someone saves one.
-- **Lifecycle:** Draft → Signed (signed in person) or Submitted (sent for
-  signature) → Approved / Rejected (Rejected is editable again).
+- All read queries are in `config/integrations.config.json`.
+- Saves send only what changed: `Id` plus changed fields for existing rows;
+  all fields plus `tag_id` for new cost lines. Details: [docs/api.md](docs/api.md).
+
+## What's connected
+
+| | |
+| --- | --- |
+| ✅ Tag list, details, labor, material, equipment, expenses | read from eMachine |
+| ✅ Edit details; add and change cost lines | saved to eMachine |
+| ⏳ Create a tag, remove a saved line, files, issues, sign/submit | **disabled** until their eMachine APIs are captured |
 
 ## Repository layout
 
 | Path | What |
 | --- | --- |
 | `frontend/` | React + Vite app (JSX) |
-| `backend/` | FastAPI app (`apexapp`) |
-| `data-model/` | Canonical logical data model |
-| `database/` | Migrations (SQLite + PostgreSQL), schema snapshots, seeds, fixtures, portability rules |
-| `config/` | App, database, branding, features, integrations, security, logging settings (+ schema) |
-| `api/` | OpenAPI (YAML/JSON), Swagger config, Postman collection |
-| `tests/` | Integration, API contract, security, database portability, browser e2e |
-| `infrastructure/` | Docker, nginx, monitoring, Kubernetes |
-| `scripts/` | Setup, start/stop, health, DB tasks, backup/restore, export validation |
-| `docs/` | Architecture, API, database, deployment, configuration, security, troubleshooting |
+| `config/` | App, branding, feature switches, eMachine queries and write fields (+ schema) |
+| `api/` | The eMachine endpoints the app uses (OpenAPI) |
+| `tests/e2e/` | Browser tests against a mock eMachine |
+| `infrastructure/` | Docker and nginx (serves the app, proxies `/datamodel` to eMachine) |
+| `scripts/` | Setup, start/stop, health check, export validation |
+| `docs/` | Architecture, API, configuration, deployment, security, troubleshooting |
 | `.apexstudio/` | Export metadata and integrity hashes |
 
 ## Tests
 
 ```bash
-scripts/validate-export.sh --tests             # everything below, on SQLite
-cd backend && uv run pytest                    # backend unit/API tests
-cd backend && uv run pytest ../tests           # integration, contract, security, portability
-cd frontend && npm test                        # frontend unit tests
-cd tests/e2e && npm install && npm test        # browser tests against a running stack (--fixtures)
+cd frontend && npm test                       # unit tests (no network)
+scripts/validate-export.sh --tests            # structure + unit tests + build
 ```
 
-Add `TEST_DATABASE_URL` / `TEST_POSTGRES_URL` to run the database tests on PostgreSQL.
-
-CI (`.github/workflows/ci.yml`) runs all of the above on every pull request and
-push to `main`, with the backend suites on both SQLite and PostgreSQL, and also
-builds and smoke-tests the Docker images.
+Browser tests: see [tests/e2e/README.md](tests/e2e/README.md). They run against
+a mock at `https://emachine.invalid` and never contact the real eMachine. CI
+(`.github/workflows/ci.yml`) runs all of them and builds the Docker image.
 
 ## Documentation
 
-[Architecture](docs/architecture.md) · [API](docs/api.md) ·
-[Database](docs/database.md) · [Portability](docs/database-portability.md) ·
+[Architecture](docs/architecture.md) · [eMachine API](docs/api.md) ·
 [Configuration](docs/configuration.md) · [Deployment](docs/deployment.md) ·
 [Security](docs/security.md) · [Troubleshooting](docs/troubleshooting.md) ·
 [Code generation](docs/code-generation.md) · [Changelog](CHANGELOG.md)

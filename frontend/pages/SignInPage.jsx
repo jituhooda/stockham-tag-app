@@ -2,34 +2,22 @@ import { useState } from 'react';
 import { Logo } from '../components/ui';
 import { useApp } from '../state/AppContext';
 
-/** Shown when the backend runs with authMode "token" and we have no valid token. */
+/** Asks for the user's eMachine access token; it is kept only in this browser. */
 export function SignInPage() {
-  const { signIn, status } = useApp();
+  const { signIn } = useApp();
   const [token, setToken] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setBusy(true);
-    setFailed(false);
-    await signIn(token);
-    setBusy(false);
-    setFailed(true); // if sign-in worked this page is already gone
-  };
 
   return (
     <div className="signin">
-      <form className="signin__card" onSubmit={submit}>
+      <form className="signin__card" onSubmit={(e) => { e.preventDefault(); signIn(token); }}>
         <Logo className="signin__logo" />
         <h1>Sign in</h1>
-        <p className="muted">Enter the access token your administrator gave you.</p>
+        <p className="muted">Paste your eMachine access token. It stays in this browser only.</p>
         <label className="field">
           <span className="field-label">Access token</span>
-          <input className="input" type="password" autoComplete="current-password" value={token} onChange={(e) => setToken(e.target.value)} required />
+          <input className="input" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} required />
         </label>
-        {failed && status === 'signed-out' && <p className="error-text">That token wasn’t accepted.</p>}
-        <button className="btn btn--dark btn--block" disabled={busy || !token.trim()}>{busy ? 'Checking…' : 'Sign in'}</button>
+        <button className="btn btn--dark btn--block" disabled={!token.trim()}>Sign in</button>
       </form>
     </div>
   );

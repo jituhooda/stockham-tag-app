@@ -2,9 +2,10 @@
   "$schema": "./config.schema.json#/definitions/features",
   "premiumTime": true,
   "sendForSignature": true,
-  "attachments": true,
-  "issues": true,
-  "issuesQuery": "",
-  "allowCustomLineItems": true,
-  "showEmachineTags": true
+  "createTags": false,
+  "deleteLines": false,
+  "attachments": false,
+  "issues": false,
+  "submit": false,
+  "issuesQuery": ""
 }

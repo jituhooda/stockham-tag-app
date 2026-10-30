@@ -25,46 +25,8 @@ jobs:
       - run: pip install --quiet pyyaml
       - run: scripts/validate-export.sh
 
-  backend:
-    name: Backend (${{ matrix.database }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        database: [sqlite, postgres]
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: stockham_test
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
-    env:
-      PG_URL: postgresql+psycopg://postgres:postgres@localhost:5432/stockham_test
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          cache-dependency-glob: backend/uv.lock
-      - run: uv sync --frozen
-      - name: Point tests at PostgreSQL
-        if: matrix.database == 'postgres'
-        run: |
-          echo "TEST_DATABASE_URL=$PG_URL" >> "$GITHUB_ENV"
-          echo "TEST_POSTGRES_URL=$PG_URL" >> "$GITHUB_ENV"
-      - name: Backend unit and API tests
-        run: uv run pytest
-      - name: Integration, contract, security and portability tests
-        run: uv run pytest ../tests
-
   frontend:
-    name: Frontend
+    name: Frontend tests and build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -81,43 +43,40 @@ jobs:
       - run: npm run build
 
   e2e:
-    name: Browser end-to-end
+    name: Browser end-to-end (mock eMachine)
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    needs: frontend
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          cache-dependency-glob: backend/uv.lock
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Install
+      - name: Build against the mock eMachine (never the real one)
+        working-directory: frontend
+        env:
+          VITE_EMACHINE_BASE_URL: https://emachine.invalid
+          VITE_EMACHINE_TOKEN: e2e
+          VITE_EMACHINE_WRITES: "true"
+        run: npm ci && npm run build
+      - name: Install Playwright
+        working-directory: tests/e2e
+        run: npm install && npx playwright install --with-deps chromium
+      - name: Serve the build
+        working-directory: frontend
         run: |
-          (cd backend && uv sync --frozen --no-dev)
-          (cd frontend && npm ci && npm run build)
-          (cd tests/e2e && npm install && npx playwright install --with-deps chromium)
-      - name: Start API (sample data) and web app
-        run: |
-          mkdir -p "$RUNNER_TEMP/e2e"
-          (cd backend && EMACHINE_MODE=fixtures WARM_CACHE=0 \
-            DATABASE_URL="sqlite:///$RUNNER_TEMP/e2e/e2e.db" ATTACHMENTS_DIR="$RUNNER_TEMP/e2e/att" \
-            nohup uv run uvicorn apexapp.main:app --port 8000 > "$RUNNER_TEMP/e2e/api.log" 2>&1 &)
-          (cd frontend && nohup npx vite preview --port 4173 > "$RUNNER_TEMP/e2e/web.log" 2>&1 &)
-          scripts/health-check.sh --wait 60
-          curl -fsS --retry 10 --retry-delay 2 --retry-connrefused http://localhost:4173/ > /dev/null
+          nohup npx vite preview --port 4173 > "$RUNNER_TEMP/web.log" 2>&1 &
+          curl -fsS --retry 15 --retry-delay 2 --retry-connrefused http://localhost:4173/ > /dev/null
       - name: Run browser tests
         working-directory: tests/e2e
         run: npm test
-      - name: Server logs
+      - name: Server log
         if: failure()
-        run: cat "$RUNNER_TEMP"/e2e/*.log
+        run: cat "$RUNNER_TEMP/web.log"
 
   docker:
-    name: Docker images
+    name: Docker image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -125,15 +84,10 @@ jobs:
         run: |
           docker compose -f docker-compose.yml config -q
           docker compose -f docker-compose.yml -f docker-compose.dev.yml config -q
-          POSTGRES_PASSWORD=ci docker compose -f docker-compose.yml -f docker-compose.prod.yml config -q
-      - name: Build images
+      - name: Build image
+        run: docker build -f frontend/Dockerfile -t stockham-tags-web:ci .
+      - name: Check nginx config and serve the app
         run: |
-          docker build -f backend/Dockerfile -t stockham-tags-backend:ci .
-          docker build -f frontend/Dockerfile -t stockham-tags-frontend:ci .
-      - name: Check nginx config
-        run: |
-          docker run --rm --add-host backend:127.0.0.1 stockham-tags-frontend:ci nginx -t
-      - name: Smoke test the API image
-        run: |
-          docker run -d --name api -p 8000:8000 -e EMACHINE_MODE=fixtures -e WARM_CACHE=0 stockham-tags-backend:ci
-          scripts/health-check.sh --wait 60 || (docker logs api; exit 1)
+          docker run --rm stockham-tags-web:ci nginx -t
+          docker run -d --name web -p 8080:8080 stockham-tags-web:ci
+          scripts/health-check.sh --url http://localhost:8080 --wait 30
