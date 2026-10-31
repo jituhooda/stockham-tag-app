@@ -1,16 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apexApi } from '../lib/apexApi';
-import { NEW_TAG_ID, fromApi, newTag, toPayload } from '../services/tagModel';
+import { NEW_TAG_ID } from '../services/tagModel';
 
 /**
- * Loads one tag and holds the user's unsaved edits.
- *
- * `form` is the editable copy; `saved` is what the server last returned.
- * `save()` creates or replaces the tag and resolves to the server's version,
- * whose id may differ from the one we loaded (new tags, and eMachine tags,
- * which the backend copies into its database on first save).
+ * Loads one tag from eMachine and holds the user's unsaved edits.
+ * `form` is the editable copy; `saved` is what eMachine last returned.
  */
-export function useTagEditor(id) {
+export function useTagEditor(id, initial) {
   const [saved, setSaved] = useState(null);
   const [form, setForm] = useState(null);
   const [dirty, setDirty] = useState(false);
@@ -25,23 +21,18 @@ export function useTagEditor(id) {
     setLoading(true);
     setError(null);
     setDirty(false);
-    if (id === NEW_TAG_ID) {
-      const t = newTag();
-      setSaved(t);
-      setForm(t);
-      setLoading(false);
-      return undefined;
-    }
     apexApi.tags
       .get(id, ctrl.signal)
       .then((t) => {
-        const f = fromApi(t);
-        setSaved(f);
-        setForm(f);
+        const start = id === NEW_TAG_ID && initial ? { ...t, ...initial } : t;
+        setSaved(start);
+        setForm(start);
       })
       .catch((e) => !ctrl.signal.aborted && setError(e))
       .finally(() => !ctrl.signal.aborted && setLoading(false));
     return () => ctrl.abort();
+    // `initial` only seeds a new tag on first load; later changes must not reload it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   /** Patch the form: an object, or a function of the current form. */
@@ -50,41 +41,40 @@ export function useTagEditor(id) {
     setDirty(true);
   }, []);
 
+  /** Patch the form without marking it changed: for things Save doesn't write (the approver and signature). */
+  const editLocal = useCallback((patch) => {
+    setForm((f) => ({ ...f, ...(typeof patch === 'function' ? patch(f) : patch) }));
+  }, []);
+
   const accept = useCallback((t) => {
-    const f = fromApi(t);
-    setSaved(f);
-    setForm(f);
+    // Keep what eMachine doesn't store yet (approver, signature) across reloads. Issues are read again by the Issues tab.
+    setForm((f) => ({ ...t, signature: f?.signature ?? t.signature }));
+    setSaved(t);
     setDirty(false);
     dirtyRef.current = false; // callers often navigate before the next render
-    return f;
+    return t;
   }, []);
 
   const save = useCallback(async () => {
     setBusy(true);
     try {
-      const body = toPayload(form);
-      const t = form.id === NEW_TAG_ID ? await apexApi.tags.create(body) : await apexApi.tags.update(form.id, body);
-      return accept(t);
+      return accept(await apexApi.tags.save(form, saved));
     } finally {
       setBusy(false);
     }
-  }, [form, accept]);
+  }, [form, saved, accept]);
 
-  /** Run a server action that returns the tag (submit, approve, reject). */
-  const act = useCallback(async (fn) => {
-    setBusy(true);
-    try {
-      return accept(await fn());
-    } finally {
-      setBusy(false);
-    }
-  }, [accept]);
+  /** The tag's saved issues were read: they become both the baseline and the form's list (unsaved picks are kept). */
+  const setSavedIssues = useCallback((rows) => {
+    setSaved((s) => (s ? { ...s, issuesLoaded: true, issues: rows } : s));
+    setForm((f) => (f ? { ...f, issuesLoaded: true, issues: [...rows.map((r) => ({ ...r })), ...f.issues.filter((i) => !i.id)] } : f));
+  }, []);
 
-  /** Attachments are saved immediately and don't make the form dirty. */
-  const setAttachments = useCallback((update) => {
-    const apply = (t) => (t ? { ...t, attachments: update(t.attachments) } : t);
-    setSaved(apply);
-    setForm(apply);
+  /** A saved line was deleted in eMachine: forget it everywhere without marking the form changed. */
+  const dropLine = useCallback((kind, lineKey) => {
+    const without = (t) => (t ? { ...t, [kind]: t[kind].filter((l) => l.key !== lineKey) } : t);
+    setForm(without);
+    setSaved(without);
   }, []);
 
   const discard = useCallback(() => {
@@ -93,5 +83,5 @@ export function useTagEditor(id) {
     dirtyRef.current = false;
   }, [saved]);
 
-  return { saved, form, dirty, dirtyRef, loading, error, busy, edit, save, act, discard, setAttachments };
+  return { saved, form, dirty, dirtyRef, loading, error, busy, edit, editLocal, accept, save, discard, dropLine, setSavedIssues };
 }

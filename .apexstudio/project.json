@@ -15,11 +15,9 @@
   "pwa": true,
   "stack": {
     "frontend": "react-vite-jsx",
-    "backend": "fastapi",
-    "database": [
-      "sqlite",
-      "postgres"
-    ]
+    "backend": null,
+    "database": null,
+    "dataSource": "eMachine (read and write over HTTP from the browser)"
   },
   "sources": {
     "designs": [
@@ -36,8 +34,6 @@
   },
   "paths": {
     "frontend": "frontend",
-    "backend": "backend",
-    "dataModel": "data-model",
     "config": "config",
     "api": "api"
   }

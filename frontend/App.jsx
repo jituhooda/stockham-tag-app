@@ -1,23 +1,14 @@
 import { RouterProvider } from 'react-router-dom';
-import { Banner, Spinner, ToastProvider } from './components/ui';
+import { ToastProvider } from './components/ui';
+import { InstallPage } from './pages/InstallPage';
 import { SignInPage } from './pages/SignInPage';
 import { router } from './routes/router';
 import { AppProvider, useApp } from './state/AppContext';
 import { TagListProvider } from './state/TagListContext';
 
 function Gate() {
-  const { status, error, reload } = useApp();
-  if (status === 'loading') return <div className="boot"><Spinner label="Starting…" /></div>;
-  if (status === 'signed-out') return <SignInPage />;
-  if (status === 'error') {
-    return (
-      <div className="boot">
-        <Banner kind="error" action={<button className="link-btn" onClick={reload}>Retry</button>}>
-          Can’t start the app: {error}
-        </Banner>
-      </div>
-    );
-  }
+  const { signedIn } = useApp();
+  if (!signedIn) return <SignInPage />;
   return (
     <TagListProvider>
       <RouterProvider router={router} />
@@ -26,6 +17,8 @@ function Gate() {
 }
 
 export function App() {
+  // The install guide is public: it must work before anyone has signed in.
+  if (window.location.pathname.replace(/\/$/, '') === '/install') return <InstallPage />;
   return (
     <ToastProvider>
       <AppProvider>

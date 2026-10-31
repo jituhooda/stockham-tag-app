@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { signatureProblems, submitProblems, tabForProblem } from '../services/validation';
+import { saveProblems, signatureProblems, submitProblems, tabForProblem } from '../services/validation';
 
 const complete = {
   jobNo: '25033', jobName: 'Dragoneer', description: 'Add door',
-  labor: [{ employeeName: 'Jacob' }], materials: [], equipment: [], expenses: [{ description: 'Parking', amount: '35' }],
+  labor: [{ employeeId: '10004953', employeeName: 'Marin Alvarado', tradeId: '10000338' }],
+  materials: [], equipment: [], expenses: [{ expenseId: '1', description: 'Parking', amount: '35' }],
 };
 
 describe('submitProblems', () => {
@@ -13,21 +14,24 @@ describe('submitProblems', () => {
       'Select a job on the Details tab', 'Add a description on the Details tab', 'Add at least one cost line',
     ]);
   });
-  it('rejects zero-amount expenses', () => {
-    expect(submitProblems({ ...complete, expenses: [{ description: 'Parking', amount: '0' }] })).toContain('Every expense needs a type and an amount');
+  it('requires picked master records', () => {
+    const p = submitProblems({ ...complete, labor: [{ employeeId: '', tradeId: '' }] });
+    expect(p).toContain('Every labor line needs a resource');
+    expect(p).toContain('Every labor line needs a trade');
   });
 });
 
-describe('signatureProblems', () => {
-  it('needs a drawing in person and an email when sending', () => {
-    expect(signatureProblems({ approver: 'Sean', mode: 'in-person', image: '' })).toEqual(['The approver needs to sign above']);
-    expect(signatureProblems({ approver: 'Sean', mode: 'send', email: 'bad' })).toEqual(['Enter a valid email to send the tag to']);
-    expect(signatureProblems({ approver: 'Sean', mode: 'send', email: 'sean@pb.com' })).toEqual([]);
-  });
+it('saveProblems only blocks lines eMachine could not store', () => {
+  expect(saveProblems({ ...complete, description: '', labor: [], expenses: [] })).toEqual([]);
+  expect(saveProblems({ ...complete, materials: [{ materialId: '' }] })).toEqual(['Every material and equipment line needs a description']);
 });
 
-it('maps problems to the tab that fixes them', () => {
+it('signatureProblems', () => {
+  expect(signatureProblems({ approver: 'Sean', mode: 'in-person', image: '' })).toEqual(['The approver needs to sign above']);
+  expect(signatureProblems({ approver: 'Sean', mode: 'send', email: 'sean@pb.com' })).toEqual([]);
+});
+
+it('maps problems to tabs', () => {
   expect(tabForProblem('Select a job on the Details tab')).toBe('details');
-  expect(tabForProblem('Every labor line needs a resource')).toBe('cost');
-  expect(tabForProblem('Choose an approver')).toBeNull();
+  expect(tabForProblem('Every labor line needs a trade')).toBe('cost');
 });

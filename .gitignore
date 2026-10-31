@@ -1,31 +1,23 @@
 # Dependencies and builds
 node_modules/
 dist/
-.venv/
 __pycache__/
-*.pyc
-*.tsbuildinfo
-.pytest_cache/
 
-# Local data and runtime state
-data/
-backups/
+# Runtime state
 .run/
-*.db
-*.db-wal
-*.db-shm
 
 # Secrets (only *.example files are committed)
 .env
 .env.*
 !.env.example
-backend/.env
 frontend/.env
 frontend/.env.local
-infrastructure/kubernetes/secret.env
 
 # Editors / OS
 .DS_Store
 .idea/
 .vscode/
 *.log
+
+# Local Netlify folder
+.netlify

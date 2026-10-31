@@ -5,8 +5,10 @@ WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
-ARG VITE_API_BASE_URL=
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+COPY config /config
+ARG VITE_EMACHINE_BASE_URL=
+ARG VITE_EMACHINE_WRITES=false
+ENV VITE_EMACHINE_BASE_URL=$VITE_EMACHINE_BASE_URL VITE_EMACHINE_WRITES=$VITE_EMACHINE_WRITES
 RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime

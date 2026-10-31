@@ -1,16 +1,69 @@
 /**
- * Build-time settings for the web app. Everything else (branding, features,
- * the signed-in user) comes from the backend at runtime via /api/v1/config.
+ * App settings: config/*.json (bundled at build time) plus VITE_* overrides.
+ * There is no backend; the browser talks to eMachine directly.
  */
+import appConfig from '../../config/app.config.json';
+import branding from '../../config/branding.config.json';
+import features from '../../config/features.config.json';
+import integrations from '../../config/integrations.config.json';
+
 const env = import.meta.env;
+const emachine = integrations.emachine;
+const forma = integrations.forma;
+const uploads = integrations.uploads;
+const submit = integrations.submit;
+const bearer = (v) => (v || '').trim().replace(/^Bearer\s+/i, '');
+const flag = (value, fallback) => (value == null || value === '' ? fallback : String(value).toLowerCase() === 'true');
 
 export const apexConfig = {
-  /** Backend origin; empty means same origin (nginx or the Vite proxy forwards /api). */
-  apiBaseUrl: (env.VITE_API_BASE_URL || '').replace(/\/$/, ''),
-  apiPrefix: '/api/v1',
-  requestTimeoutMs: Number(env.VITE_REQUEST_TIMEOUT_MS || 30000),
+  app: appConfig,
+  branding,
+  features,
+  emachine: {
+    // Empty base URL = same origin: nginx (or the Vite dev server) forwards /datamodel to eMachine.
+    baseUrl: (env.VITE_EMACHINE_BASE_URL ?? '').replace(/\/$/, ''),
+    queryPath: emachine.queryPath,
+    tablePath: emachine.tablePath,
+    queries: emachine.queries,
+    writes: emachine.writes,
+    timeoutMs: (emachine.timeoutSeconds || 30) * 1000,
+    /** Optional token from .env (a leading "Bearer " is accepted). Without it, users paste their own on the sign-in screen. */
+    token: (env.VITE_EMACHINE_TOKEN || '').trim().replace(/^Bearer\s+/i, ''),
+    /**
+     * Saving to eMachine is OFF unless VITE_EMACHINE_WRITES=true. While off, every
+     * save is logged to the console and nothing is sent.
+     */
+    writesEnabled: flag(env.VITE_EMACHINE_WRITES, false),
+  },
+  /** Submit: one JSON document to the signed-document service. */
+  submit: { url: submit.url, timeoutMs: (submit.timeoutSeconds || 180) * 1000 },
+  /** File uploads (photos, audio, documents) through eMachine's cloud-storage service. */
+  uploads: {
+    url: uploads.url,
+    deleteUrl: uploads.deleteUrl,
+    providerName: uploads.providerName,
+    customerName: uploads.customerName,
+    pathTemplate: uploads.pathTemplate,
+    appId: uploads.appId,
+    maxBytes: (uploads.maxFileMb || 25) * 1024 * 1024,
+    timeoutMs: (uploads.timeoutSeconds || 120) * 1000,
+    imageMaxPixels: uploads.image?.maxPixels || 2560,
+    imageQuality: uploads.image?.quality || 0.88,
+  },
+  /** Autodesk Forma project lookup (called directly from the browser). Its short-lived token is fetched from tokenUrl on demand. */
+  forma: {
+    apiBase: forma.apiBase,
+    accountId: forma.accountId,
+    projectsPath: forma.projectsPath,
+    jobFilter: forma.jobFilter,
+    issuesPath: forma.issuesPath,
+    issueStatuses: forma.issueStatuses || 'open,in_progress',
+    issuePageSize: forma.issuePageSize || 200,
+    tokenUrl: (env.VITE_FORMA_TOKEN_URL || forma.tokenUrl || '').trim(),
+  },
+  editableStatuses: appConfig.editableStatuses || ['Draft', 'Rejected'],
   storageKeys: {
-    token: 'stockham.token',
+    token: 'stockham.emachineToken',
     settings: 'stockham.settings.v2',
   },
 };

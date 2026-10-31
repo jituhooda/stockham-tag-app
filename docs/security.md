@@ -1,54 +1,49 @@
 # Security
 
-## Secrets
+## TODO: secure the Autodesk token service
 
-- The **eMachine token** is only ever read by the backend (`EMACHINE_API_TOKEN`).
-  The browser never sees it, so it can't leak through the JavaScript bundle.
-- `AUTH_TOKENS`, `POSTGRES_PASSWORD` and `EMACHINE_API_TOKEN` belong in `.env` /
-  a secret store. `.env` files are git-ignored; only `*.example` files are committed.
-- **Rotate the eMachine token** if it has ever been pasted into chat, email or
-  a repository.
+**Status: open (testing only).** Before real users, do this:
 
-## Authentication and authorisation
+- `GET https://stockham.emachine.ai/stockham/token` (set as `forma.tokenUrl` in
+  `config/integrations.config.json`) returns `{ access_token, expires_at }` to **anyone**: no authentication, and
+  CORS allows any origin (`access-control-allow-origin: *`). Anyone who finds the URL can get an Autodesk token
+  with the app's permissions (it reads projects in the Stockham account).
+- Secure it on the service side: require the user's eMachine bearer token (or another login), and/or limit the
+  allowed origins to this app's address. Keep the token's Autodesk scopes as narrow as possible.
+- Then update `fetchToken()` in `frontend/lib/forma.js` to send the credentials, and add this app's origin to the
+  service's CORS allow-list.
+- Also consider moving the whole Forma check behind eMachine or this site's proxy, so the Autodesk token never
+  reaches the browser at all. Today the browser holds it in memory for up to about an hour.
 
-- `AUTH_MODE=none` makes every request an anonymous user with `defaultRole`.
-  Use it only for development or behind a proxy that authenticates users.
-- `AUTH_MODE=token`: clients send `Authorization: Bearer <token>`; tokens are
-  compared in constant time. The web app asks for a token on its sign-in screen
-  and keeps it in `localStorage`.
-- Every route declares the permission it needs (`rbac.py`); `created_by` and
-  `uploaded_by` come from the authenticated user, not the request body.
+Also open: the eMachine token in `frontend/.env.local` (`VITE_EMACHINE_TOKEN`) is bundled into the page and
+visible to everyone who can load it; see "Tokens" below.
 
-For company-wide SSO, put the app behind an identity-aware proxy (e.g.
-oauth2-proxy, Cloudflare Access) and keep `AUTH_MODE=none`, or extend
-`auth.py` to validate your IdP's JWTs.
+## Tokens
 
-## Input handling
+- The app sends the user's eMachine bearer token with every request. It lives in
+  the browser (localStorage) and is sent only to this site's `/datamodel` proxy
+  (or eMachine directly).
+- **Never build a personal or admin token into the app** (`VITE_EMACHINE_TOKEN`):
+  anything in `VITE_*` is readable by everyone who loads the site. If you need a
+  built-in token, ask the eMachine admin for one limited to the tag tables.
+- Tokens shared in chat or email should be revoked and re-issued.
+- The nginx proxy drops cookies and the `Origin` header, so only the bearer token
+  authenticates requests.
 
-- All request bodies are validated by Pydantic (types, lengths, non-negative numbers, list sizes).
-- eMachine queries are fixed templates from config; the only user-supplied
-  values (employee, divisions) are escaped with `sql_literal` and length-limited,
-  and the tag id placeholder is always an integer.
-- Uploads: allow-listed MIME types, magic-byte check, size limit, sanitised file
-  names, random storage keys (no user input in paths). Non-image/PDF files are
-  served with `Content-Disposition: attachment`.
-- Signatures must be real PNGs under `maxSignatureBytes`.
+## Writes
 
-## HTTP hardening
+- Read-only by default (`VITE_EMACHINE_WRITES=false`).
+- Only allow-listed tables and fields can be written (`writes` in
+  `config/integrations.config.json`); updates send only changed fields.
+- Ids put into SQL must be integers; text values are quoted and escaped.
+- Features whose eMachine API isn't known are disabled rather than guessed.
 
-- API: `nosniff`, `X-Frame-Options: DENY`, restrictive CSP, `no-store`, request ids.
-- nginx: CSP for the SPA (`'self'` only; `blob:`/`data:` images), same headers,
-  12 MB body limit, no server tokens. Enable HSTS once on HTTPS.
-- CORS only for configured origins. Unhandled errors return a generic message;
-  details go to the log with the request id.
-- Containers run as non-root; the Kubernetes API pod uses a read-only root filesystem.
+## HTTP hardening (nginx)
+
+CSP limited to this site and eMachine, `nosniff`, `X-Frame-Options: DENY`,
+strict referrer policy, no server tokens. Enable HSTS once on HTTPS.
 
 ## Tests
 
-`tests/security` covers token checks, role enforcement, spoofed user names,
-headers, CORS, SQL literal escaping, upload type/size checks, odd ids,
-fake signatures and error leakage.
-
-## Reporting
-
-Report vulnerabilities privately to the Stockham IT contact rather than in an issue.
+Browser tests run against a mock at `https://emachine.invalid` and block every
+other outside request, so they cannot reach real eMachine data.

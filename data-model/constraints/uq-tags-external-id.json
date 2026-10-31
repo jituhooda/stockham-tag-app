@@ -1,8 +1,0 @@
-{
-  "name": "uq_tags_external_id",
-  "entity": "Tag",
-  "type": "unique",
-  "fields": [
-    "external_id"
-  ]
-}

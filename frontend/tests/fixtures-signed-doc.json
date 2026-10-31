@@ -1,0 +1,88 @@
+{
+ "description": "Add furring wall for the furry",
+ "customer_name": "Skyline Construction Inc.",
+ "customer_email": "smhubert@gmail.com",
+ "job_name": "Databricks           1025-0083",
+ "job_address": "1 Sansome Floors 28/29/40",
+ "job_city_zip": "San Francisco",
+ "tag_date": "2026-05-29",
+ "job_num": "A2155",
+ "tag_num": "A2155-1",
+ "pm_email": "sean@stockhamconstruction.com",
+ "originator_email": "sean@stockhamconstruction.com",
+ "signature_image_b64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+ "signer_name": "Sean Hubert",
+ "pm_name": "Cameron A Barsuglia",
+ "issue_table": [
+  "2 : Can’t close JC due to plumbers",
+  "9 : Room has been completely dropped and punched",
+  "22 : Rooms closed up and touched up",
+  "46 : Rooms closed up and touched up",
+  "5 : Room has been completely dropped and punched",
+  "59 : Rooms closed up and touched up",
+  "35 : Rooms closed up and touched up"
+ ],
+ "labor_table": [
+  {
+   "EmployeeName": "Jacob S Adams",
+   "TradeName": "Framing",
+   "ST": "18.00",
+   "OT": "3.00",
+   "DT": "10.00",
+   "POT": "",
+   "PDT": ""
+  },
+  {
+   "EmployeeName": "James T Anderson",
+   "TradeName": "Taping",
+   "ST": "4.00",
+   "OT": "4.00",
+   "DT": "0.00",
+   "POT": "",
+   "PDT": ""
+  }
+ ],
+ "material_table": [
+  {
+   "Description": "box of mud",
+   "Trade": "Taping",
+   "Qty": "5.0",
+   "Length": "10'"
+  }
+ ],
+ "equipment_table": [
+  {
+   "Description": "welder",
+   "Qty": "33.00"
+  },
+  {
+   "Description": "Welding Machine",
+   "Qty": "8.00"
+  }
+ ],
+ "expense_table": [
+  {
+   "Description": "Parking",
+   "Amount": "88.00"
+  },
+  {
+   "Description": "Small Tools / Consumables",
+   "Amount": "55.00"
+  },
+  {
+   "Description": "testing",
+   "Amount": "33.00"
+  }
+ ],
+ "files_table": [
+  {
+   "photo_url": "https://dl.dropboxusercontent.com/scl/fi/example0/photo0.jpg?rlkey=example&dl=1"
+  },
+  {
+   "photo_url": "https://dl.dropboxusercontent.com/scl/fi/example1/photo1.jpg?rlkey=example&dl=1"
+  },
+  {
+   "photo_url": "https://dl.dropboxusercontent.com/scl/fi/example2/photo2.jpg?rlkey=example&dl=1"
+  }
+ ]
+}

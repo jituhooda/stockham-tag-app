@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apexApi } from '../lib/apexApi';
 
-// Shared across components and kept for the session; the backend caches eMachine too.
+// Shared across components and kept for the session (cleared by Refresh in the menu).
 const cache = new Map();
 
 function load(key, fetcher) {
@@ -17,26 +17,38 @@ function load(key, fetcher) {
 
 export const clearMasterDataCache = () => cache.clear();
 
+/** Start loading a list early so it is ready when a screen asks for it. */
+export const preloadMasterData = (kind) => load(kind, apexApi.master[kind]).catch(() => {});
+
 /**
- * Reference list from the backend: employees, materials, equipment, expenses,
- * trades, issues, or jobs (pass divisions).
+ * Reference list from eMachine: employees, materials, equipment, expenses,
+ * trades, jobs (pass divisions) or approvers (pass a customer id).
  */
-export function useMasterData(kind, divisions) {
-  const key = kind === 'jobs' ? `jobs:${(divisions || []).join('|')}` : kind;
+export function useMasterData(kind, arg) {
+  const key = kind === 'jobs' ? `jobs:${(arg || []).join('|')}` : kind === 'approvers' ? `approvers:${arg}` : kind;
   const [state, setState] = useState(() => ({ data: [], loading: true, error: '' }));
+  const fetcher = kind === 'jobs' ? () => apexApi.master.jobs(arg) : kind === 'approvers' ? () => apexApi.master.approvers(arg) : apexApi.master[kind];
+
+  /** Drop the cached list and read it again from eMachine (after adding an item). Resolves to the new list. */
+  const reload = useCallback(async () => {
+    cache.delete(key);
+    const data = await load(key, fetcher);
+    setState({ data, loading: false, error: '' });
+    return data;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` captures the argument
+  }, [key, kind]);
 
   useEffect(() => {
     let live = true;
     setState((s) => ({ ...s, loading: true, error: '' }));
-    const fetcher = kind === 'jobs' ? () => apexApi.master.jobs(divisions) : apexApi.master[kind];
     load(key, fetcher)
       .then((data) => live && setState({ data, loading: false, error: '' }))
       .catch((e) => live && setState({ data: [], loading: false, error: e.message }));
     return () => {
       live = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` captures divisions
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` captures the argument
   }, [key, kind]);
 
-  return state;
+  return { ...state, reload };
 }

@@ -2,7 +2,7 @@
 # Validate that this export is complete and intact.
 #   scripts/validate-export.sh                 structure, JSON/YAML syntax, artifact hashes
 #   scripts/validate-export.sh --update-hashes rewrite .apexstudio/artifact-hashes.json
-#   scripts/validate-export.sh --tests         also run all test suites (SQLite; Postgres if TEST_POSTGRES_URL)
+#   scripts/validate-export.sh --tests         also run the frontend unit tests and build
 source "$(dirname "$0")/_common.sh"
 need python3
 
@@ -38,7 +38,7 @@ for p in sorted(root.rglob("*.json")):
 
 try:
     import yaml
-    for p in list(root.glob("*.yml")) + list((root / "api").glob("*.yaml")) + list((root / "infrastructure").rglob("*.y*ml")):
+    for p in list(root.glob("*.yml")) + list((root / "api").glob("*.yaml")) + list((root / ".github").rglob("*.yml")):
         try:
             list(yaml.safe_load_all(p.read_text(encoding="utf-8").replace("!reset", "").replace("!override", "")))
         except Exception as e:
@@ -82,10 +82,8 @@ print(f" ✓ {len(manifest['structure']['required'])} required paths present, JS
 PY
 
 if [[ $tests == 1 ]]; then
-  info "Backend unit tests";        (cd "$ROOT/backend" && uv run pytest)
-  info "Cross-cutting suites";      (cd "$ROOT/backend" && uv run pytest ../tests)
   info "Frontend unit tests";       (cd "$ROOT/frontend" && npm test --silent)
   info "Frontend build";            (cd "$ROOT/frontend" && npm run build --silent >/dev/null)
-  ok "All tests passed"
+  ok "All tests passed (browser tests: see tests/e2e/README.md)"
 fi
 ok "Export is valid"

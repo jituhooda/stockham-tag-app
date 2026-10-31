@@ -1,7 +1,0 @@
-{
-  "$schema": "./config.schema.json#/definitions/logging",
-  "level": "INFO",
-  "format": "text",
-  "accessLog": true,
-  "redactHeaders": ["authorization", "cookie"]
-}

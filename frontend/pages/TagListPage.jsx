@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { IconAlert, IconBox, IconCalendar, IconChevronRight, IconDollar, IconMenu, IconPlus, IconUsers, IconWrench } from '../components/icons';
 import { MenuDrawer } from '../components/MenuDrawer';
+import { NewTagDialog } from '../components/NewTagDialog';
 import { Banner, Logo, StatusPill } from '../components/ui';
 import { tagPath } from '../routes/router';
 import { NEW_TAG_ID } from '../services/tagModel';
@@ -11,11 +12,12 @@ import { useTagList } from '../state/TagListContext';
 const BASE_STATUSES = ['Draft', 'Submitted', 'Signed', 'Approved', 'Rejected'];
 
 export function TagListPage() {
-  const { config, can } = useApp();
-  const { items, warnings, loading, error, refresh } = useTagList();
+  const { config, user, settings } = useApp();
+  const { items, loading, error, refresh } = useTagList();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('All');
   const [menu, setMenu] = useState(false);
+  const [adding, setAdding] = useState(false);
   const navigate = useNavigate();
 
   const statuses = useMemo(() => [...new Set([...BASE_STATUSES, ...items.map((t) => t.status).filter(Boolean)])], [items]);
@@ -35,8 +37,8 @@ export function TagListPage() {
         <div className="list-head__top">
           <Logo className="list-head__logo" />
           <div className="list-head__title">
-            <h1>{config?.branding?.appTitle || 'Tags'}</h1>
-            <span>{config?.branding?.appSubtitle || 'Change Order'}</span>
+            <h1>{config.branding.appTitle || 'Tags'}</h1>
+            <span>{config.branding.appSubtitle || 'Change Order'}</span>
           </div>
           <button className="icon-btn" aria-label="Open menu" onClick={() => setMenu(true)}>
             <IconMenu size={28} />
@@ -49,11 +51,9 @@ export function TagListPage() {
             {statuses.map((s) => <option key={s}>{s}</option>)}
           </select>
         </div>
-        {can('tags:write') && (
-          <button className="add-tag" onClick={() => navigate(tagPath(NEW_TAG_ID))}>
-            <IconPlus size={22} /> Add Tag
-          </button>
-        )}
+        <button className="add-tag" onClick={() => setAdding(true)}>
+          <IconPlus size={22} /> Add Tag
+        </button>
       </header>
 
       <div className="list-body">
@@ -62,7 +62,6 @@ export function TagListPage() {
             <IconAlert size={18} /> Couldn’t load tags: {error}
           </Banner>
         )}
-        {warnings.map((w) => <Banner key={w} kind="warn">{w}</Banner>)}
         {loading && !items.length && Array.from({ length: 3 }, (_, i) => <div key={i} className="tag-card skeleton" />)}
         {!loading && !error && !visible.length && (
           <p className="empty">{items.length ? 'No tags match your search.' : 'No tags yet. Tap “Add Tag” to create one.'}</p>
@@ -73,6 +72,15 @@ export function TagListPage() {
       </div>
 
       <MenuDrawer open={menu} onClose={() => setMenu(false)} />
+      {adding && (
+        <NewTagDialog
+          onCancel={() => setAdding(false)}
+          onConfirm={(job, warning) => {
+            setAdding(false);
+            navigate(tagPath(NEW_TAG_ID), { state: { job: { ...job, createdBy: settings.employeeName || user.name }, warning } });
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -97,7 +105,6 @@ function TagCard({ tag }) {
         <span title="Equipment"><IconWrench size={18} />{tag.counts.equipment}</span>
         <span title="Expenses"><IconDollar size={18} />{tag.counts.expense}</span>
       </div>
-      {tag.source === 'emachine' && <span className="tag-card__source">eMachine</span>}
     </NavLink>
   );
 }

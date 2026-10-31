@@ -1,44 +1,544 @@
-import { request } from './apexHttp';
+/**
+ * Everything the app reads from and writes to eMachine.
+ * Read queries live in config/integrations.config.json; this module maps rows
+ * to the app's shapes and turns edits into the smallest set of writes.
+ */
+import { apexConfig } from './apexConfig';
+import { formaFindProject, formaIssue, formaIssues, formaProjectExists } from './forma';
+import { ApiError, deleteCloudFile, fileUrlFrom, insertedId, query, runDelete, runWrites, uploadFile, sqlInt, sqlString, writeRequest } from './apexHttp';
+import { isoDate, labelOf, num, pick, text, truthy } from '../services/fields';
+import { EMAIL_RE } from '../services/validation';
+import { buildSignedDocBody } from './signedDoc';
+import { NEW_TAG_ID, fixed, isEditable, lineKey, newTag, plain } from '../services/tagModel';
 
-/** Every backend endpoint the app uses, in one place. See api/openapi.yaml. */
+const dedupe = (items) => {
+  const seen = new Set();
+  return items.filter((i) => i.label && !seen.has(i.label.toLowerCase()) && seen.add(i.label.toLowerCase()));
+};
+const unique = (items) => dedupe(items).sort((a, b) => a.label.localeCompare(b.label));
+
+const masterItem = (r) => {
+  const amount = pick(r, 'Amount', 'Rate', 'Cost', 'Price', 'DefaultAmount');
+  return { id: text(r, 'Id'), label: labelOf(r), defaultAmount: amount != null && Number.isFinite(Number(amount)) ? Number(amount) : null };
+};
+
+/* ------------------------------------------------------------------ mapping */
+
+export function summaryFromRow(r) {
+  return {
+    id: text(r, 'Id'),
+    tagNumber: text(r, 'tag_number'),
+    status: text(r, 'status') || 'Draft',
+    description: text(r, 'description'),
+    tagDate: isoDate(pick(r, 'tag_date')),
+    jobNo: text(r, 'JobNo'),
+    jobName: text(r, 'JobName'),
+    updatedAt: isoDate(pick(r, 'LastModifiedDate')),
+    counts: {
+      labor: num(r, 'labor_count'),
+      material: num(r, 'material_count'),
+      equipment: num(r, 'equipment_count'),
+      expense: num(r, 'expense_count'),
+    },
+  };
+}
+
+export function headerFromRow(r) {
+  return {
+    ...newTag(),
+    issuesLoaded: false,
+    id: text(r, 'Id'),
+    tagNumber: text(r, 'tag_number'),
+    status: text(r, 'status') || 'Draft',
+    description: text(r, 'description'),
+    tagDate: isoDate(pick(r, 'tag_date')),
+    isPremium: truthy(pick(r, 'IsPremium')),
+    jobNo: text(r, 'JobNo'),
+    jobName: text(r, 'JobName'),
+    customerId: text(r, 'CustomerID'),
+    pmEmail: text(r, 'PMEmail'),
+    address: text(r, 'Address', 'JobAddress'),
+    createdBy: text(r, 'CreatedById'),
+    lastModified: isoDate(pick(r, 'LastModifiedDate')),
+  };
+}
+
+export const laborFromRow = (r) => ({
+  key: lineKey(),
+  id: text(r, 'Id'),
+  employeeId: text(r, 'employee_id'),
+  employeeName: text(r, 'employee_name'),
+  tradeId: text(r, 'trade_id'),
+  trade: text(r, 'TradeName'),
+  regular: fixed(pick(r, 'regularhours')),
+  overtime: fixed(pick(r, 'overtime')),
+  doubleTime: fixed(pick(r, 'doubletime')),
+});
+
+export const materialFromRow = (r) => ({
+  key: lineKey(),
+  id: text(r, 'Id'),
+  materialId: text(r, 'material_id'),
+  description: text(r, 'description'),
+  qty: plain(pick(r, 'qty')),
+  length: plain(pick(r, 'length')),
+});
+
+export const equipmentFromRow = (r) => ({
+  key: lineKey(),
+  id: text(r, 'Id'),
+  equipmentId: text(r, 'equipment_id'),
+  description: text(r, 'description'),
+  qty: plain(pick(r, 'qty')),
+});
+
+// eMachine keeps the expense amount in `qty`.
+export const expenseFromRow = (r) => ({
+  key: lineKey(),
+  id: text(r, 'Id'),
+  expenseId: text(r, 'expenses_id'),
+  description: text(r, 'expense_type_description', 'expenses_description'),
+  amount: fixed(pick(r, 'qty')),
+});
+
+/* ------------------------------------------------------------------ writes */
+
+const n2 = (v) => (v === '' || v == null ? '0.00' : Number(v).toFixed(2));
+const nPlain = (v) => (v === '' || v == null ? '0' : String(Number(v)));
+
+/** eMachine field values for each table, from an editor line. */
+export const LINE_TABLES = {
+  labor: {
+    table: 'tag_labor',
+    fields: (l) => ({
+      employee_id: l.employeeId, employee_name: l.employeeName, trade_id: l.tradeId,
+      regularhours: n2(l.regular), overtime: n2(l.overtime), doubletime: n2(l.doubleTime),
+    }),
+  },
+  materials: { table: 'tag_materials', fields: (l) => ({ material_id: l.materialId, qty: nPlain(l.qty), length: l.length === '' ? undefined : nPlain(l.length) }) },
+  equipment: { table: 'tag_equipment', fields: (l) => ({ equipment_id: l.equipmentId, qty: nPlain(l.qty) }) },
+  issues: { table: 'tag_issues', fields: (l) => ({ issue_id: l.issueId }) },
+  expenses: { table: 'tag_other_expenses', fields: (l) => ({ expenses_id: l.expenseId, expenses_description: l.description, qty: n2(l.amount) }) },
+};
+
+/** How an issue is shown everywhere: "5 : Room has been completely dropped and punched". */
+export const issueLabel = (displayId, text) => `${displayId} : ${text}`.trim();
+
+const issueOption = (i) => ({
+  issueId: i.id,
+  displayId: i.displayId,
+  title: i.title || '',
+  label: issueLabel(i.displayId, i.description || i.title || ''),
+});
+
+export const issueRowFromRow = (r) => ({ id: text(r, 'Id'), issueId: text(r, 'issue_id') });
+
+/** A customer's contact, as offered in the Sign tab's approver list. */
+export const approverFromRow = (r) => {
+  const first = text(r, 'firstname', 'FirstName');
+  const last = text(r, 'lastname', 'LastName');
+  return {
+    id: text(r, 'Id'),
+    name: text(r, 'fullname') || `${first} ${last}`.trim() || text(r, 'Email'),
+    firstName: first,
+    lastName: last,
+    email: text(r, 'Email'),
+    customerId: text(r, 'customerID', 'CustomerID'),
+    customerName: text(r, 'CustomerName'),
+  };
+};
+
+/** A saved signature row (tag_signature). */
+export const signatureFromRow = (r) => ({
+  id: text(r, 'Id'),
+  name: text(r, 'name'),
+  role: text(r, 'role'),
+  description: text(r, 'description'),
+  signedAt: text(r, 'CreatedDate'),
+  image: signatureSrc(text(r, 'signature')),
+});
+
+/**
+ * Something an <img> can show for a stored signature: a data URL, a web link, or bare base64 of a PNG / JPEG / SVG.
+ * Anything else (including empty) gives null, so a row we can't draw is listed without a picture.
+ */
+export function signatureSrc(value) {
+  const v = String(value || '').trim();
+  if (!v) return null;
+  if (/^data:image\/(png|jpe?g|gif|webp|svg\+xml);/i.test(v)) return v;
+  if (/^https?:\/\/\S+$/i.test(v)) return v;
+  const b64 = v.replace(/\s+/g, '');
+  if (b64.length > 60 && /^[A-Za-z0-9+/]+=*$/.test(b64)) {
+    if (b64.startsWith('iVBOR')) return `data:image/png;base64,${b64}`;
+    if (b64.startsWith('/9j/')) return `data:image/jpeg;base64,${b64}`;
+    if (b64.startsWith('PHN2Zy') || b64.startsWith('PD94bWw')) return `data:image/svg+xml;base64,${b64}`;
+  }
+  return null;
+}
+
+export const photoFromRow = (r) => {
+  const url = text(r, 'photo_url');
+  const name = text(r, 'description') || decodeURIComponent(url.split('?')[0].split('/').pop() || '');
+  return { id: text(r, 'Id'), url, name, uploadedAt: text(r, 'uploaded_at') };
+};
+
+/** Kind of file, from its name: drives the thumbnail (photo) or icon (everything else). */
+export const fileKind = (name = '') => {
+  const ext = name.toLowerCase().split('.').pop();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'bmp'].includes(ext)) return 'image';
+  if (['mp4', 'mov', 'm4v', 'webm', 'avi', '3gp'].includes(ext)) return 'video';
+  if (['mp3', 'm4a', 'wav', 'aac', 'ogg', 'amr', 'flac'].includes(ext)) return 'audio';
+  return 'document';
+};
+
+/** Folder-safe user name for the upload path (the signed-in user's email). */
+const pathUser = (u) => String(u || '').replace(/[^A-Za-z0-9@._+-]/g, '_');
+/** File name as stored: no folders, no control characters, not too long. */
+const safeName = (n) => String(n || 'file').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').trim().slice(0, 150) || 'file';
+
+export const headerFields = (t) => ({
+  tag_number: t.tagNumber.trim(),
+  status: t.status,
+  description: t.description,
+  tag_date: t.tagDate,
+  IsPremium: t.isPremium ? 1 : 0,
+  JobNo: t.jobNo,
+  JobName: t.jobName,
+  CustomerID: t.customerId,
+  PMEmail: t.pmEmail.trim(),
+  JobAddress: t.address,
+});
+
+/** A new tag, as the existing app inserts it: no Id, IsPremium only when set, tag number may be blank. */
+export const insertFields = (t) => {
+  const { IsPremium, ...rest } = headerFields(t);
+  return { CreatedById: t.createdBy, ...rest, ...(IsPremium ? { IsPremium } : {}) };
+};
+export const newTagRequest = (t) => writeRequest('tags', insertFields(t));
+
+function changed(next, prev) {
+  const out = {};
+  for (const [k, v] of Object.entries(next)) if (String(v ?? '') !== String(prev[k] ?? '')) out[k] = v;
+  return out;
+}
+
+/**
+ * Work out the eMachine writes for saving `form` over `saved` (an existing tag).
+ * Updates send only changed fields plus `Id`; new lines send everything plus `tag_id`.
+ */
+export function planSave(form, saved) {
+  const tagId = sqlInt(form.id);
+  const requests = [];
+  const header = changed(headerFields(form), headerFields(saved));
+  if (Object.keys(header).length) requests.push(writeRequest('tags', { Id: tagId, ...header }));
+
+  for (const [key, { table, fields }] of Object.entries(LINE_TABLES)) {
+    const before = new Map(saved[key].filter((l) => l.id).map((l) => [l.id, l]));
+    for (const line of form[key]) {
+      if (line.id) {
+        const prev = before.get(line.id);
+        const diff = prev ? changed(fields(line), fields(prev)) : fields(line);
+        if (Object.keys(diff).length) requests.push(writeRequest(table, { Id: sqlInt(line.id), ...diff }));
+      } else {
+        requests.push(writeRequest(table, { tag_id: tagId, ...fields(line) }));
+      }
+    }
+  }
+  return requests;
+}
+
+/* ------------------------------------------------------------------ API */
+
 export const apexApi = {
-  config: () => request('/config'),
-  me: () => request('/me'),
+  /** Issues come from the job's Autodesk Forma project. */
+  issues: {
+    cache: new Map(),
+    /**
+     * The open / in-progress issues of the job's Forma project (cached for the session; `clear()` to read again). Resolves to { projectId, options } where
+     * options are { issueId, displayId, title, label }; projectId is null when the job has no Forma project.
+     */
+    options(jobNo) {
+      const key = String(jobNo);
+      if (!this.cache.has(key)) {
+        const p = (async () => {
+          // No caller's abort signal here: the request is shared (and cached) by every caller.
+          const project = await formaFindProject(key);
+          if (!project) return { projectId: null, options: [] };
+          const list = await formaIssues(project.id);
+          return { projectId: project.id, options: list.map(issueOption) };
+        })().catch((e) => {
+          this.cache.delete(key); // allow a retry
+          throw e;
+        });
+        this.cache.set(key, p);
+      }
+      return this.cache.get(key);
+    },
+    clear() {
+      this.cache.clear();
+    },
+    /** Saved rows as editor lines, with each issue's label (looked up in Forma if it is no longer open). */
+    async describe(rows, { projectId, options }, signal) {
+      const known = new Map(options.map((o) => [o.issueId, o]));
+      const missing = [...new Set(rows.map((r) => r.issueId))].filter((id) => !known.has(id)).slice(0, 25);
+      if (projectId) {
+        await Promise.all(missing.map(async (id) => {
+          const i = await formaIssue(projectId, id, signal).catch(() => null);
+          if (i) known.set(id, issueOption(i));
+        }));
+      }
+      return rows.map((r) => {
+        const o = known.get(r.issueId);
+        return { key: lineKey(), id: r.id, issueId: r.issueId, displayId: o?.displayId ?? '', label: o?.label || `Issue ${r.issueId.slice(0, 8)}…` };
+      });
+    },
+  },
 
   master: {
-    employees: () => request('/master/employees'),
-    materials: () => request('/master/materials'),
-    equipment: () => request('/master/equipment'),
-    expenses: () => request('/master/expenses'),
-    trades: () => request('/master/trades'),
-    issues: () => request('/master/issues'),
-    jobs: (divisions) => request('/master/jobs', { params: { division: divisions } }),
-    division: (employee) => request('/master/division', { params: { employee } }),
+    employees: async () =>
+      (await query('employees'))
+        .map((r) => ({ id: text(r, 'Id'), employee: text(r, 'Employee'), name: text(r, 'EmployeeName') || text(r, 'Employee'), division: text(r, 'Division') }))
+        .filter((e) => e.id)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    // Keeps eMachine's order (Framing, Drywall, Taping, ACT, DFH).
+    trades: async () => dedupe((await query('trades')).map((r) => ({ id: text(r, 'Id'), label: text(r, 'TradeName') || labelOf(r) }))),
+    materials: async () => unique((await query('materials')).map(masterItem)),
+    equipment: async () => unique((await query('equipment')).map(masterItem)),
+    expenses: async () => unique((await query('expenses')).map(masterItem)),
+    jobs: async (divisions) => {
+      const list = (divisions?.length ? divisions : apexConfig.app.defaultDivisions).slice(0, 20);
+      return (await query('jobs', { divisions: list.map(sqlString).join(',') })).map((r) => ({
+        jobNo: text(r, 'JobNo'),
+        jobName: text(r, 'JobName'),
+        label: text(r, 'CJobName') || `${text(r, 'JobNo')} : ${text(r, 'JobName')}`,
+        customerId: text(r, 'CustomerID', 'CustomerId'),
+        customerName: text(r, 'CustomerName'),
+        address: text(r, 'Address', 'JobAddress'),
+        pmEmail: text(r, 'PMEmail', 'PM_Email', 'ProjectManagerEmail'),
+      }));
+    },
+    /**
+     * Add a new item to the material list (the "+" next to Description). `costCodeId` is the chosen Type,
+     * a trade's Id. Resolves to eMachine's new Id when the response has one, else null (reload the list to find it).
+     */
+    createMaterial: async ({ description, costCodeId }) => {
+      const name = String(description || '').trim();
+      if (!name) throw new ApiError('Enter a material name');
+      if (!costCodeId) throw new ApiError('Choose a type');
+      const [res] = await runWrites([writeRequest('materials_master', { description: name, CostCodeID: costCodeId })]);
+      return insertedId(res);
+    },
+    /** Add a new item to the equipment list (the "+" next to Description). Resolves to the new Id, or null if the response has none. */
+    createEquipment: async ({ description }) => {
+      const name = String(description || '').trim();
+      if (!name) throw new ApiError('Enter an equipment name');
+      const [res] = await runWrites([writeRequest('equipment_master', { description: name })]);
+      return insertedId(res);
+    },
+    /** The customer's contacts (who can approve a tag for that customer). */
+    approvers: async (customerId) => {
+      if (!customerId) return [];
+      const rows = (await query('approvers', { customerId: sqlString(String(customerId).slice(0, 50)) })).map(approverFromRow).filter((a) => a.id && a.name);
+      return rows.sort((a, b) => a.name.localeCompare(b.name));
+    },
+    /** A customer's name (only used when the tag and its contacts don't carry it). */
+    customerName: async (customerId) => {
+      if (!customerId) return '';
+      const [r] = await query('customerName', { customerId: sqlString(String(customerId).slice(0, 50)) });
+      return r ? text(r, 'CustomerName') : '';
+    },
+    /**
+     * Add a contact for a customer (the "+" next to the approver). Resolves to eMachine's new Id when the response
+     * has one, else null (reload the list and look for the email).
+     */
+    createApprover: async ({ customerId, firstName, lastName, email }) => {
+      const first = String(firstName || '').trim();
+      const last = String(lastName || '').trim();
+      const mail = String(email || '').trim();
+      if (!customerId) throw new ApiError('This tag has no customer, so an approver can’t be added.');
+      if (!first) throw new ApiError('Enter a first name');
+      if (!EMAIL_RE.test(mail)) throw new ApiError('Enter a valid email address');
+      const [res] = await runWrites([writeRequest('customercontact', { FirstName: first, LastName: last, Email: mail, CustomerID: customerId })]);
+      return insertedId(res);
+    },
+    /** Fresh customer / PM email / address for one job (used when a tag is started). */
+    jobDetails: async (jobNo) => {
+      const [r] = await query('jobDetails', { jobNo: sqlString(String(jobNo).slice(0, 100)) });
+      return r ? { customerId: text(r, 'CustomerID', 'CustomerId'), pmEmail: text(r, 'PMEmail'), address: text(r, 'Address') } : null;
+    },
+    division: async (employee) => {
+      const rows = await query('division', { employee: sqlString(String(employee).slice(0, 100)) });
+      const found = [...new Set(rows.map((r) => text(r, 'Division')).filter(Boolean))];
+      return { employee, divisions: found.length ? found : apexConfig.app.defaultDivisions };
+    },
   },
 
   tags: {
-    list: (signal) => request('/tags', { signal }),
-    get: (id, signal) => request(`/tags/${encodeURIComponent(id)}`, { signal }),
-    create: (body) => request('/tags', { method: 'POST', body }),
-    update: (id, body) => request(`/tags/${encodeURIComponent(id)}`, { method: 'PUT', body }),
-    submit: (id, body) => request(`/tags/${encodeURIComponent(id)}/submit`, { method: 'POST', body }),
-    approve: (id) => request(`/tags/${encodeURIComponent(id)}/approve`, { method: 'POST' }),
-    reject: (id) => request(`/tags/${encodeURIComponent(id)}/reject`, { method: 'POST' }),
-    remove: (id) => request(`/tags/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-  },
+    list: async (signal) => (await query('tags', {}, signal)).map(summaryFromRow).filter((t) => t.id),
 
-  attachments: {
-    upload: (tagId, file, name) => {
-      const form = new FormData();
-      form.append('file', file, name || file.name);
-      return request(`/tags/${encodeURIComponent(tagId)}/attachments`, { method: 'POST', body: form });
+    get: async (id, signal) => {
+      if (id === NEW_TAG_ID) return newTag();
+      const tagId = sqlInt(id);
+      const [head, labor, materials, equipment, expenses] = await Promise.all([
+        query('tag', { tagId }, signal),
+        query('tagLabor', { tagId }, signal),
+        query('tagMaterials', { tagId }, signal),
+        query('tagEquipment', { tagId }, signal),
+        query('tagExpenses', { tagId }, signal),
+      ]);
+      if (!head.length) throw new ApiError('Tag not found', { status: 404 });
+      return {
+        ...headerFromRow(head[0]),
+        labor: labor.map(laborFromRow),
+        materials: materials.map(materialFromRow),
+        equipment: equipment.map(equipmentFromRow),
+        expenses: expenses.map(expenseFromRow),
+      };
     },
-    remove: (tagId, attachmentId) =>
-      request(`/tags/${encodeURIComponent(tagId)}/attachments/${attachmentId}`, { method: 'DELETE' }),
-  },
 
-  approvers: {
-    list: (customer) => request('/approvers', { params: { customer } }),
-    add: (body) => request('/approvers', { method: 'POST', body }),
+    /** Save edits; resolves to the tag as eMachine now has it. */
+    save: async (form, saved) => {
+      if (form.id === NEW_TAG_ID) return apexApi.tags.create(form);
+      const requests = planSave(form, saved);
+      await runWrites(requests);
+      return apexApi.tags.get(form.id);
+    },
+
+    /**
+     * Add Tag ✓: the job's fresh details, plus whether it exists as a project in Autodesk Forma.
+     * A missing project is only a warning (the tag can still be created); a failed check throws
+     * after the details are loaded, as `error`, so the caller can warn and carry on.
+     */
+    prepareNew: async (job) => {
+      const [details, forma] = await Promise.all([
+        apexApi.master.jobDetails(job.jobNo).catch(() => null),
+        formaProjectExists(job.jobNo).then((found) => ({ found }), (error) => ({ error })),
+      ]);
+      return { details, found: forma.found, error: forma.error };
+    },
+
+    /** Create a tag and its lines. */
+    create: async (form) => {
+      const [res] = await runWrites([newTagRequest(form)]);
+      let id = insertedId(res);
+      if (id == null) {
+        // The insert didn't say which Id it made: take this user's newest tag for the job.
+        const rows = await query('newTagId', { jobNo: sqlString(form.jobNo), createdBy: sqlString(form.createdBy) });
+        id = rows.length && text(rows[0], 'Id') ? Number(text(rows[0], 'Id')) : null;
+      }
+      if (id == null) throw new ApiError('eMachine created the tag but didn’t return its Id; refresh the list to find it.');
+      const lines = planSave({ ...form, id: String(id) }, { ...form, id: String(id), labor: [], materials: [], equipment: [], expenses: [], issues: [] })
+        .filter((r) => r.table !== 'tags');
+      await runWrites(lines);
+      return apexApi.tags.get(String(id));
+    },
+
+    /** Delete one saved cost line right away (`kind` is labor, materials, equipment or expenses). */
+    deleteLine: async (kind, id) => {
+      const entry = LINE_TABLES[kind];
+      if (!entry) throw new ApiError(`Unknown line type “${kind}”`);
+      await runDelete(entry.table, id);
+    },
+
+    /** The issues saved on a tag: [{ id, issueId }] (tag_issues rows; the issue's details live in Autodesk Forma). */
+    issueRows: async (id, signal) => (await query('tagIssues', { tagId: sqlInt(id) }, signal)).map(issueRowFromRow).filter((r) => r.issueId),
+
+    /** Signatures saved on a tag (tag_signature rows), oldest first. */
+    signatures: async (id, signal) => (await query('tagSignature', { tagId: sqlInt(id) }, signal)).map(signatureFromRow),
+
+    /** A tag's attached files (photos, audio, documents), oldest first. */
+    photos: async (id, signal) => (await query('tagPhotos', { tagId: sqlInt(id) }, signal)).map(photoFromRow),
+
+    /**
+     * Attach a file to a saved tag, as the existing app does: upload it to eMachine's cloud-storage service
+     * (which returns the stored file's link), then save that link on the tag in tag_photos.
+     */
+    attachFile: async ({ tagId, file, filename, user, signal }) => {
+      const id = sqlInt(tagId);
+      const owner = pathUser(user);
+      if (!owner) throw new ApiError('Sign in again to upload files.');
+      const up = apexConfig.uploads;
+      if (file.size > up.maxBytes) throw new ApiError(`That file is too large (limit ${Math.round(up.maxBytes / 1048576)} MB).`);
+      const name = safeName(filename || file.name);
+      const path = up.pathTemplate.replace('{appId}', up.appId).replace('{user}', owner);
+      const result = await uploadFile(up.url, { path, provider_name: up.providerName, customer_name: up.customerName }, file, name, signal);
+      const url = fileUrlFrom(result);
+      if (!url) throw new ApiError('The file was uploaded, but eMachine didn’t return its link, so it was not attached.');
+      await runWrites([writeRequest('tag_photos', { tag_id: id, photo_url: url, description: name })]);
+      return url;
+    },
+
+    /**
+     * Remove one attached file: its tag_photos row first (the same delete statement as cost lines), then the
+     * stored copy in Dropbox via eMachine's cloud-storage service. Pass the file's `name` and the signed-in `user`
+     * to remove the Dropbox copy too; it lives at the same path the upload used.
+     * Resolves to true when the Dropbox copy was removed, false when it was left in place.
+     */
+    deletePhoto: async (photoId, { name, user } = {}) => {
+      await runDelete('tag_photos', photoId);
+      const owner = pathUser(user);
+      if (!name || !owner) return false;
+      const up = apexConfig.uploads;
+      const folder = up.pathTemplate.replace('{appId}', up.appId).replace('{user}', owner);
+      try {
+        await deleteCloudFile(up.deleteUrl, {
+          provider_name: up.providerName,
+          customer_name: up.customerName,
+          file_name: `${folder}/${safeName(name)}`,
+        });
+        return true;
+      } catch (e) {
+        console.warn('The tag_photos row was deleted, but the Dropbox copy could not be removed:', e);
+        return false;
+      }
+    },
+
+    /**
+     * Everything the signed document lists, read back from eMachine (so it matches what was saved):
+     * the job, the grouped labor, materials, equipment, expenses, files and the issues' labels.
+     * Run this after the tag has been saved.
+     */
+    submitData: async (tag, signal) => {
+      const tagId = sqlInt(tag.id);
+      const premium = tag.isPremium ? '1' : '0';
+      const [jobs, labor, materials, equipment, expenses, photos, issueRows] = await Promise.all([
+        tag.jobNo ? query('submitJob', { jobNo: sqlString(String(tag.jobNo).slice(0, 50)) }, signal) : [],
+        query('submitLabor', { tagId, premium }, signal),
+        query('submitMaterials', { tagId }, signal),
+        query('submitEquipment', { tagId }, signal),
+        query('submitExpenses', { tagId }, signal),
+        query('submitPhotos', { tagId }, signal),
+        apexApi.tags.issueRows(tag.id, signal),
+      ]);
+      let issues = [];
+      if (issueRows.length) {
+        const facts = await apexApi.issues.options(tag.jobNo);
+        const lines = await apexApi.issues.describe(issueRows, facts, signal);
+        if (lines.some((l) => l.displayId === '')) {
+          throw new ApiError('Couldn’t read the details of every issue from Autodesk Forma, so the document can’t be made yet. Try again.');
+        }
+        issues = lines.map((l) => l.label);
+      }
+      return { job: jobs[0] || null, labor, materials, equipment, expenses, photos, issues };
+    },
+
+    /**
+     * After the signed document was created: read the tag again and, only if it is still editable (the service
+     * didn't change its status), mark it Submitted. Resolves to the tag as eMachine now has it.
+     */
+    finishSubmit: async (id) => {
+      let tag = await apexApi.tags.get(id);
+      if (isEditable(tag)) {
+        await runWrites([writeRequest('tags', { Id: sqlInt(id), status: 'Submitted' })]);
+        tag = await apexApi.tags.get(id);
+      }
+      return tag;
+    },
+
+    /** Change only the status (submit/approve flows, once enabled). */
+    setStatus: async (id, status) => {
+      await runWrites([writeRequest('tags', { Id: sqlInt(id), status })]);
+      return apexApi.tags.get(id);
+    },
   },
 };

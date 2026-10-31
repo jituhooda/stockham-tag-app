@@ -1,64 +1,30 @@
 # Configuration
 
-Settings come from `config/*.json` (checked in, validated by
-`config/config.schema.json`) and are overridden by environment variables
-(secrets and per-environment values). Example environment files are in
-`config/environments/`, `.env.example`, `backend/.env.example` and
-`frontend/.env.example`.
+Everything is bundled into the web app at build time.
 
-## Files
+## `config/` (checked in, validated by `config/config.schema.json`)
 
 | File | Contents |
 | --- | --- |
-| `app.config.json` | name, version, default divisions, new-tag number prefix, editable statuses |
-| `database.config.json` | default dialect and SQLite/PostgreSQL options, migrations dir |
-| `branding.config.json` | company name, titles, colours (sent to the browser) |
-| `features.config.json` | premium time, send-for-signature, issues query, eMachine tags in list |
-| `integrations.config.json` | eMachine URL, timeout, cache TTL, mode, **all SQL queries** |
-| `security.config.json` | auth mode, default role, CORS, upload limits and types |
-| `logging.config.json` | level, text/json |
+| `app.config.json` | name, version, default divisions, editable statuses |
+| `branding.config.json` | company name, titles, colours |
+| `features.config.json` | switches; parts without a known eMachine API stay `false` |
+| `integrations.config.json` | eMachine paths, **all read queries**, and the fields each table write may send |
 
-Relative paths in these files resolve against `config/`.
+Only flip a feature switch once its eMachine call is implemented and tested.
 
-## Environment variables (backend)
+## Build-time variables (`frontend/.env.local`, Docker build args)
 
 | Variable | Default | |
 | --- | --- | --- |
-| `APP_ENV` | development | shown in `/health/ready` |
-| `CONFIG_DIR` | `<repo>/config` | |
-| `DATABASE_URL` | SQLite in `data/` | |
-| `RUN_MIGRATIONS` | true | migrate on startup |
-| `EMACHINE_MODE` | live | `fixtures` = offline sample data |
-| `EMACHINE_API_TOKEN` | — | **secret** |
-| `EMACHINE_BASE_URL` | from JSON | |
-| `EMACHINE_CACHE_TTL` | 300 | seconds |
-| `AUTH_MODE` | none | `token` to require sign-in |
-| `AUTH_TOKENS` | — | **secret**, JSON `{token: {name, role}}` |
-| `CORS_ORIGINS` | from JSON | comma-separated |
-| `ATTACHMENTS_DIR` | `data/attachments` | relative to the working directory |
-| `ISSUES_QUERY` | — | SQL for the Issues picker |
-| `STATIC_DIR` | — | serve a built web app from the API |
-| `LOG_LEVEL`, `LOG_FORMAT` | INFO, text | |
-| `WARM_CACHE` | 1 | prefetch reference data at startup |
+| `VITE_EMACHINE_WRITES` | `false` | **Saving to eMachine.** Off = Save logs requests and sends nothing |
+| `VITE_EMACHINE_BASE_URL` | empty | empty = same origin via the `/datamodel` proxy; or a full URL to call eMachine directly (needs CORS) |
+| `VITE_EMACHINE_TOKEN` | empty | built-in token for every user (visible to anyone who loads the site); empty = users paste their own |
+| `EMACHINE_PROXY_TARGET` | `https://emachine.instantar.io` | where `npm run dev` / `preview` forward `/datamodel` |
 
-## Frontend (build time)
+Root `.env` (docker compose / scripts): `WEB_PORT`, `APP_VERSION`, `VITE_EMACHINE_WRITES`.
 
-| Variable | |
-| --- | --- |
-| `VITE_API_BASE_URL` | API origin if not same-origin (default: same origin) |
-| `VITE_DEV_BACKEND_URL` | where `npm run dev` proxies `/api` (default `http://localhost:8000`) |
-| `VITE_REQUEST_TIMEOUT_MS` | default 30000 |
+## On the device
 
-## Roles
-
-| Role | Can |
-| --- | --- |
-| viewer | read tags and reference data |
-| editor | + create, edit, delete drafts, upload, submit, add approvers |
-| approver | + approve / reject |
-| admin | everything |
-
-## Changing the eMachine queries
-
-Edit `integrations.config.json`. Placeholders: `{employee}`, `{divisions}`
-(already quoted by the backend) and `{tag_id}` (an integer). Restart the API.
+Stored in the browser's localStorage: the access token (if pasted), the chosen
+employee / divisions, and remembered approver names per customer.

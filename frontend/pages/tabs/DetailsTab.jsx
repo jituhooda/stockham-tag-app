@@ -1,119 +1,70 @@
-import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { IconTrash } from '../../components/icons';
-import { ActionBar, SaveButton, SearchSelect, useToast } from '../../components/ui';
-import { useMasterData } from '../../hooks/useMasterData';
-import { apexApi } from '../../lib/apexApi';
+import { IconPin } from '../../components/icons';
+import { ActionBar, SaveButton, StatusPill } from '../../components/ui';
 import { NEW_TAG_ID } from '../../services/tagModel';
 import { useApp } from '../../state/AppContext';
-import { useTagList } from '../../state/TagListContext';
 
-export function DetailsTab({ tag, edit, save, readOnly, busy, editor }) {
-  const { config, divisions, can } = useApp();
-  const jobs = useMasterData('jobs', divisions);
-  const { refresh } = useTagList();
-  const navigate = useNavigate();
-  const toast = useToast();
-
-  const options = useMemo(
-    () => jobs.data.map((j, i) => ({ value: String(i), label: j.label, sub: [j.customerName, j.address].filter(Boolean).join(' · ') })),
-    [jobs.data],
-  );
-  const jobLabel = tag.jobNo || tag.jobName ? [tag.jobNo, tag.jobName].filter(Boolean).join(' : ') : '';
-  const canDelete = !readOnly && can('tags:delete') && tag.id !== NEW_TAG_ID && tag.source === 'local';
-
-  const remove = async () => {
-    if (!window.confirm(`Delete tag ${tag.tagNumber}? This can't be undone.`)) return;
-    try {
-      await apexApi.tags.remove(tag.id);
-      editor.discard();
-      refresh();
-      toast('Tag deleted');
-      navigate('/', { replace: true });
-    } catch (e) {
-      toast(e.message, 'error');
-    }
-  };
+/**
+ * The tag's Details tab. The job is fixed (chosen when the tag was created), so it is shown,
+ * not edited. A saved tag shows its number; a new one asks for it.
+ */
+export function DetailsTab({ tag, edit, save, readOnly, busy }) {
+  const { config, user, settings } = useApp();
+  const isNew = tag.id === NEW_TAG_ID;
+  const jobLabel = [tag.jobNo, tag.jobName].filter(Boolean).join(' : ');
+  const createdBy = tag.createdBy || (isNew ? settings.employeeName || user.name : '—');
 
   return (
     <>
       <div className="tab-body">
-        <div className="form-card">
-          <div className="form-grid">
-            <div className="field field--wide">
-              <span className="field-label">Job</span>
-              <SearchSelect
-                value={jobLabel}
-                options={options}
-                loading={jobs.loading}
-                searchIcon
-                disabled={readOnly}
-                ariaLabel="Job"
-                placeholder={jobs.error ? 'Jobs unavailable' : 'Search jobs'}
-                onChange={(o) => {
-                  const j = jobs.data[Number(o.value)];
-                  if (!j) return;
-                  edit({
-                    jobNo: j.jobNo,
-                    jobName: j.jobName,
-                    customerId: j.customerId,
-                    customerName: j.customerName,
-                    address: j.address,
-                    pmEmail: j.pmEmail || tag.pmEmail,
-                  });
-                }}
-              />
+        <div className="nt">
+          <div className="nt__job">
+            <span className="nt__label">Job</span>
+            <strong className="nt__job-name">{jobLabel}</strong>
+            {tag.address && <span className="nt__address"><IconPin size={22} />{tag.address}</span>}
+          </div>
+
+          <div className="nt__cols nt__row">
+            <div className="nt__tagno">
+              <label className="nt__label" htmlFor="nt-tag-number">Tag #</label>
+              {isNew ? (
+                <input id="nt-tag-number" className="nt__inline" value={tag.tagNumber} disabled={readOnly} placeholder="Enter Text"
+                  onChange={(e) => edit({ tagNumber: e.target.value })} />
+              ) : (
+                <span id="nt-tag-number" className="nt__value">{tag.tagNumber}</span>
+              )}
             </div>
+            <StatusPill status={tag.status} />
+          </div>
 
-            <label className="field">
-              <span className="field-label">Tag #</span>
-              <input className="input" value={tag.tagNumber} disabled={readOnly} placeholder="Assigned on save"
-                onChange={(e) => edit({ tagNumber: e.target.value })} />
-            </label>
-
-            <label className="field">
-              <span className="field-label">Tag Date</span>
+          <div className="nt__cols">
+            <label className="nt__stack">
+              <span className="nt__label">Date</span>
               <input className="input" type="date" value={tag.tagDate || ''} disabled={readOnly} onChange={(e) => edit({ tagDate: e.target.value })} />
             </label>
-
-            <label className="field field--wide">
-              <span className="field-label">Description</span>
-              <textarea className="input textarea" rows={4} value={tag.description} disabled={readOnly}
-                placeholder="What changed and why" onChange={(e) => edit({ description: e.target.value })} />
-            </label>
-
-            <label className="field">
-              <span className="field-label">Customer</span>
-              <input className="input" value={tag.customerName || tag.customerId} readOnly tabIndex={-1} placeholder="From job" />
-            </label>
-
-            <label className="field">
-              <span className="field-label">PM Email</span>
-              <input className="input" type="email" value={tag.pmEmail} disabled={readOnly} onChange={(e) => edit({ pmEmail: e.target.value })} />
-            </label>
-
-            <label className="field field--wide">
-              <span className="field-label">Job Address</span>
-              <input className="input" value={tag.address} disabled={readOnly} onChange={(e) => edit({ address: e.target.value })} />
-            </label>
-
-            {config?.features?.premiumTime !== false && (
-              <label className="check field--wide">
-                <input type="checkbox" checked={!!tag.isPremium} disabled={readOnly} onChange={(e) => edit({ isPremium: e.target.checked })} />
-                <span>Premium time (after-hours / weekend work)</span>
-              </label>
-            )}
+            <div className="nt__stack">
+              <span className="nt__label">Created By</span>
+              <span className="nt__user">{createdBy.replace(/@/g, '@\u200b')}</span>
+            </div>
           </div>
+
+          {config.features.premiumTime !== false && (
+            <fieldset className="nt__radios">
+              <legend className="sr-only">Type of work</legend>
+              <label><input type="radio" name="nt-work" checked={!tag.isPremium} disabled={readOnly} onChange={() => edit({ isPremium: false })} />Extra Work (Non-contract)</label>
+              <label><input type="radio" name="nt-work" checked={!!tag.isPremium} disabled={readOnly} onChange={() => edit({ isPremium: true })} />OT - Premium Time Only</label>
+            </fieldset>
+          )}
+
+          <label className="nt__stack nt__desc">
+            <span className="nt__label">Description of Work</span>
+            <textarea className="input textarea" value={tag.description} disabled={readOnly} placeholder="Enter Text"
+              onChange={(e) => edit({ description: e.target.value })} />
+          </label>
         </div>
       </div>
       {!readOnly && (
         <ActionBar>
           <SaveButton onClick={() => save()} busy={busy} />
-          {canDelete && (
-            <button className="btn btn--ghost btn--right" onClick={remove} disabled={busy}>
-              <IconTrash size={18} /> Delete
-            </button>
-          )}
         </ActionBar>
       )}
     </>

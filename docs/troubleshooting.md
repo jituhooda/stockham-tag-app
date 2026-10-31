@@ -1,20 +1,13 @@
 # Troubleshooting
 
-Every API response carries `X-Request-ID`; search the logs for it.
-
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| Banner "Tags from eMachine are unavailable" | eMachine down, wrong URL or token, or network policy blocks the host | `curl $EMACHINE_BASE_URL` from the API host; check `EMACHINE_API_TOKEN`; `/health/ready` shows `tokenConfigured` |
-| Pickers say "Employees/Jobs unavailable" (502) | same as above | same; or run with `EMACHINE_MODE=fixtures` to work offline |
-| Fields blank for eMachine data | eMachine column names differ from the ones the app expects | add the real column name to the candidate lists in `backend/apexapp/integrations/emachine_mapping.py` |
-| No jobs in the Job picker | your division has no jobs, or division lookup failed | menu → **You are** → pick your name; check `GET /api/v1/master/division?employee=…` |
-| "Sign in required" loop | `AUTH_MODE=token` and the token isn't in `AUTH_TOKENS` | fix `AUTH_TOKENS` (valid JSON) and restart |
-| 409 "can no longer be edited" | tag is Submitted/Signed/Approved | an approver can **Reject** it to reopen |
-| 422 when submitting | tag incomplete | the response's `problems` list says what's missing |
-| Upload fails "aren't allowed" / "don't match" | file type not allow-listed, or renamed file | add the type to `security.config.json` → `uploads.allowedTypes` |
-| 413 from nginx | file > 12 MB | raise `client_max_body_size` and `uploads.maxBytes` together |
-| `database is locked` (SQLite) | many simultaneous writers | move to PostgreSQL (`scripts/db-switch.sh`) |
-| API won't start: migration error | a migration failed half-way on a non-transactional change, or files edited after release | `scripts/db-migrate.sh --status`; restore the last backup; never edit shipped migrations |
-| `scripts/db-verify.sh` reports mismatches | schema drifted from `data-model/` | add a migration, or update the model if the change was intended |
-| Blank page after deploy | browser cached old `index.html` | nginx serves it `no-cache`; hard-refresh once |
-| `scripts/validate-export.sh` reports "changed" | files edited after export | intended? run `--update-hashes` |
+| Back on the sign-in screen | eMachine rejected the token (expired or revoked) | Paste a fresh token |
+| "Can’t reach eMachine" | proxy not forwarding, or network blocks eMachine | `scripts/health-check.sh --emachine` on the server; check `/datamodel` in nginx |
+| CORS error in the console | app built with `VITE_EMACHINE_BASE_URL` set and eMachine refuses this origin | build with it empty and use the proxy |
+| Save says "Read-only mode" | `VITE_EMACHINE_WRITES` isn't `true` in this build | rebuild with it on (after testing) |
+| "Removing saved lines isn’t connected" | eMachine delete API not wired yet | reload the tag to undo; remove the line in eMachine |
+| Blank fields | eMachine column differs from the configured query | adjust the query in `config/integrations.config.json` |
+| No jobs in the Job picker | division not found | menu → **Show jobs for** → pick the employee |
+| Trade list empty | the `trades` query (table `trade`) differs in your eMachine | adjust `queries.trades` |
+| `validate-export.sh` reports "changed" | files edited after the last hash update | intended? run `--update-hashes` |

@@ -1,9 +1,0 @@
-{
-  "name": "ck_tag_labor_regular_hours",
-  "entity": "LaborLine",
-  "type": "check",
-  "fields": [
-    "regular_hours"
-  ],
-  "expression": "regular_hours >= 0"
-}

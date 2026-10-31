@@ -7,24 +7,20 @@
   "exportedAt": "2026-10-30T00:00:00Z",
   "includes": [
     "frontend",
-    "backend",
-    "data-model",
-    "database",
     "config",
     "api",
     "tests",
     "infrastructure",
     "scripts",
-    "docs"
+    "docs",
+    ".github"
   ],
   "excludes": [
     "node_modules",
-    ".venv",
     "dist",
-    "data",
-    "backups",
     ".env",
-    "**/.env"
+    "**/.env",
+    "**/.env.local"
   ],
   "integrity": {
     "hashes": ".apexstudio/artifact-hashes.json",

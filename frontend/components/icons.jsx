@@ -33,5 +33,14 @@ export const IconPaperclip = (p) => (<svg {...base(p)}><path d="m20 11-8.5 8.5a5
 export const IconEraser = (p) => (<svg {...base(p)}><path d="m3 15 9-9 7 7-6 6H8z" /><path d="m8 10 7 7M13 20h8" /></svg>);
 export const IconFile = (p) => (<svg {...base(p)}><path d="M6 3h8l5 5v13H6z" /><path d="M14 3v5h5" /></svg>);
 export const IconRefresh = (p) => (<svg {...base(p)}><path d="M20 11a8 8 0 0 0-14.7-3.5M4 4v4h4M4 13a8 8 0 0 0 14.7 3.5M20 20v-4h-4" /></svg>);
+export const IconPin = (p) => (<svg {...base(p)}><path d="M12 21s-6.5-5.4-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.6 12 21 12 21z" /><circle cx="12" cy="10.5" r="2.4" /></svg>);
+export const IconImage = (p) => (<svg {...base(p)}><rect x="3.5" y="5" width="17" height="14" rx="2" /><circle cx="9" cy="10" r="1.6" /><path d="m4 17 5-4.5 3.5 3 3-2.5 4.5 4" /></svg>);
+export const IconAudio = (p) => (<svg {...base(p)}><path d="M9 18V6l10-2v12" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="16.5" cy="16" r="2.5" /></svg>);
+export const IconVideo = (p) => (<svg {...base(p)}><rect x="3.5" y="6" width="12" height="12" rx="2" /><path d="m15.5 10.5 5-3v9l-5-3z" /></svg>);
+export const IconDocument = (p) => (<svg {...base(p)}><path d="M6 3h8l5 5v13H6z" /><path d="M14 3v5h5M9 13h7M9 17h7" /></svg>);
+export const IconFlipH = (p) => (<svg {...base(p)}><path d="M12 3v18" strokeDasharray="2 2.5" /><path d="M10 7 3.5 19H10zM14 7l6.5 12H14z" /></svg>);
+export const IconFlipV = (p) => (<svg {...base(p)}><path d="M3 12h18" strokeDasharray="2 2.5" /><path d="M7 10 19 3.5V10zM7 14l12 6.5V14z" /></svg>);
+export const IconRotate = (p) => (<svg {...base(p)}><path d="M5 12a7 7 0 1 0 2.2-5.1" /><path d="M4.5 4v4h4" /><text x="12" y="15" fontSize="6.5" textAnchor="middle" fill="currentColor" stroke="none" fontWeight="700">90°</text></svg>);
 export const IconClose = (p) => (<svg {...base(p)}><path d="M6 6l12 12M18 6 6 18" /></svg>);
+export const IconCheck = (p) => (<svg {...base(p)}><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>);
 export const IconAlert = (p) => (<svg {...base(p)}><path d="M12 4 2.5 20h19z" /><path d="M12 10v4M12 17h.01" /></svg>);

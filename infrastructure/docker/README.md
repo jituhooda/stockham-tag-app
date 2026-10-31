@@ -1,18 +1,13 @@
-# Docker images
+# Docker image
 
-| Image | Dockerfile | Serves |
-| --- | --- | --- |
-| backend | `backend/Dockerfile` | API on :8000, data in the `/data` volume |
-| frontend | `frontend/Dockerfile` | nginx on :8080: the web app, `/api` proxied to `backend:8000` |
-| all-in-one | `infrastructure/docker/single-container.Dockerfile` | web app and API from one process on :8000 |
+`frontend/Dockerfile` builds the web app (Node) and serves it with nginx on
+port 8080. nginx also forwards `/datamodel/` to eMachine, so the browser only
+talks to this site. There is no backend container and no database.
 
-All images build from the **repository root** because they need `config/`,
-`database/migrations` and `infrastructure/nginx`.
+Build from the repository root (the build needs `config/` and `infrastructure/nginx`):
 
 ```bash
-docker compose up -d --build                                              # SQLite
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d      # PostgreSQL
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up         # hot reload
+docker compose up -d --build                                        # http://localhost:8080, read-only
+VITE_EMACHINE_WRITES=true docker compose up -d --build              # saving to eMachine enabled
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up   # hot reload on :5173
 ```
-
-Both runtime images run as a non-root user and define health checks.
