@@ -61,8 +61,8 @@
     "image": { "maxPixels": 2560, "quality": 0.88 }
   },
   "submit": {
-    "comment": "Submit (Sign tab) saves the tag, then sends one JSON document to eMachine's signed-document service, which does everything else (the PDF, the Autodesk Cost change order, the emails). Called through eMachine's proxy, as the existing app does; the request carries only the user's email in the instantarusername header.",
-    "url": "https://emachine.instantar.io/proxyapi/api/https://stockham.emachine.ai/stockham/create-stockham-signed-doc",
+    "comment": "Submit (Sign tab) saves the tag, then sends one JSON document to eMachine's signed-document service, which does everything else (the PDF, the Autodesk Cost change order, the emails). The request carries only the user's email in the instantarusername header.",
+    "url": "https://stockham.emachine.ai/stockham/create-stockham-signed-doc",
     "timeoutSeconds": 180
   },
   "forma": {

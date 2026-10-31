@@ -1,0 +1,51 @@
+# Netlify equivalent of infrastructure/nginx/nginx.conf.
+# Set VITE_EMACHINE_WRITES=true (and any other VITE_* values) in Site settings > Environment variables.
+[build]
+  command = "cd frontend && npm ci && npm run build"
+  publish = "frontend/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# eMachine reads/writes and file uploads: same-origin paths forwarded to eMachine (no CORS needed).
+[[redirects]]
+  from = "/datamodel/*"
+  to = "https://emachine.instantar.io/datamodel/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/cloudproviders/*"
+  to = "https://emachine.instantar.io/cloudproviders/:splat"
+  status = 200
+  force = true
+
+# Client-side routes (/tags/12/cost) fall back to the app.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self), geolocation=(), microphone=()"
+    Content-Security-Policy = "default-src 'self'; img-src 'self' data: blob: https://*.dropboxusercontent.com; media-src 'self' https://*.dropboxusercontent.com; style-src 'self'; script-src 'self'; connect-src 'self' https://emachine.instantar.io https://developer.api.autodesk.com https://stockham.emachine.ai; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"

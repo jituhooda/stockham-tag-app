@@ -60,7 +60,7 @@ it('posts like the captured request: JSON, the user in instantarusername, no eMa
   const body = buildSignedDocBody({ tag, signature, user, data });
   expect(await postSignedDoc(body, 'sean@stockhamconstruction.com')).toEqual({ ok: true });
   const [url, init] = fetchMock.mock.calls[0];
-  expect(url).toBe('https://emachine.instantar.io/proxyapi/api/https://stockham.emachine.ai/stockham/create-stockham-signed-doc');
+  expect(url).toBe('https://stockham.emachine.ai/stockham/create-stockham-signed-doc');
   expect(init.method).toBe('POST');
   expect(init.headers['Content-Type']).toBe('application/json');
   expect(init.headers.instantarusername).toBe('sean@stockhamconstruction.com');

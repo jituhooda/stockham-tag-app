@@ -158,7 +158,7 @@ list refresh). What the app does, in order:
 3. Reads back (`tags.submitData`): the job (`select *, c.CustomerName from job j JOIN customer c ... where j.JobNo = '<job>'`),
    labor (grouped per person and trade; ST/OT/DT, or POT/PDT for OT/Premium tags), materials, equipment, other expenses, photo URLs
    and the Forma issue labels (`number : description`). The queries are `submit*` in `integrations.config.json`.
-4. `POST https://emachine.instantar.io/proxyapi/api/https://stockham.emachine.ai/stockham/create-stockham-signed-doc` with a JSON body
+4. `POST https://stockham.emachine.ai/stockham/create-stockham-signed-doc` with a JSON body
    (header `instantarusername` = the signed-in user; no `Authorization`, as in the capture). Fields and order match
    `Body_Json_create-stockham-signed-doc.json`: `description, customer_name, customer_email, job_name, job_address, job_city_zip,
    tag_date, job_num, tag_num, pm_email, originator_email, signature_image_b64, signer_name, pm_name, issue_table, labor_table,
