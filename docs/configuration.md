@@ -8,7 +8,7 @@ Everything is bundled into the web app at build time.
 | --- | --- |
 | `app.config.json` | name, version, default divisions, editable statuses |
 | `branding.config.json` | company name, titles, colours |
-| `features.config.json` | switches; parts without a known eMachine API stay `false` (`attachments`, `issues`, `submit`) |
+| `features.config.json` | switches; parts without a known eMachine API stay `false` |
 | `integrations.config.json` | eMachine paths, **all read queries**, and the fields each table write may send |
 
 Only flip a feature switch once its eMachine call is implemented and tested.

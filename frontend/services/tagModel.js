@@ -35,6 +35,8 @@ export const jobFields = (j, fallbackEmail = '') => ({
   pmEmail: j.pmEmail || fallbackEmail,
 });
 
+export const emptyIssue = () => ({ key: lineKey(), id: '', issueId: '', displayId: '', label: '' });
+
 export function newTag() {
   return {
     id: NEW_TAG_ID,
@@ -56,7 +58,8 @@ export function newTag() {
     equipment: [],
     expenses: [],
     issues: [],
-    signature: { approver: '', mode: 'in-person', email: '', image: '' },
+    issuesLoaded: true, // a saved tag's issues are read when the Issues tab opens
+    signature: { approverId: '', approver: '', email: '', mode: 'in-person', image: '' },
     attachments: [],
   };
 }

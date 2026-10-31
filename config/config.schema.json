@@ -98,15 +98,8 @@
         "sendForSignature": {
           "type": "boolean"
         },
-        "issues": {
-          "type": "boolean"
-        },
         "submit": {
           "type": "boolean"
-        },
-        "issuesQuery": {
-          "type": "string",
-          "description": "model_query SQL listing issues (read-only)"
         }
       },
       "additionalProperties": false
@@ -119,6 +112,26 @@
       "properties": {
         "$schema": {
           "type": "string"
+        },
+        "submit": {
+          "type": "object",
+          "required": [
+            "url"
+          ],
+          "properties": {
+            "comment": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "timeoutSeconds": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "additionalProperties": false
         },
         "uploads": {
           "type": "object",
@@ -211,6 +224,18 @@
             },
             "jobFilter": {
               "type": "string"
+            },
+            "issuesPath": {
+              "type": "string",
+              "pattern": "\\{projectId\\}"
+            },
+            "issueStatuses": {
+              "type": "string"
+            },
+            "issuePageSize": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
             }
           },
           "additionalProperties": false

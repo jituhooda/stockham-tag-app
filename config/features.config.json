@@ -2,7 +2,5 @@
   "$schema": "./config.schema.json#/definitions/features",
   "premiumTime": true,
   "sendForSignature": true,
-  "issues": false,
-  "submit": false,
-  "issuesQuery": ""
+  "submit": true
 }

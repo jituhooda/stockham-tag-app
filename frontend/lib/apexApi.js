@@ -4,10 +4,12 @@
  * to the app's shapes and turns edits into the smallest set of writes.
  */
 import { apexConfig } from './apexConfig';
-import { formaProjectExists } from './forma';
+import { formaFindProject, formaIssue, formaIssues, formaProjectExists } from './forma';
 import { ApiError, deleteCloudFile, fileUrlFrom, insertedId, query, runDelete, runWrites, uploadFile, sqlInt, sqlString, writeRequest } from './apexHttp';
 import { isoDate, labelOf, num, pick, text, truthy } from '../services/fields';
-import { NEW_TAG_ID, fixed, lineKey, newTag, plain } from '../services/tagModel';
+import { EMAIL_RE } from '../services/validation';
+import { buildSignedDocBody } from './signedDoc';
+import { NEW_TAG_ID, fixed, isEditable, lineKey, newTag, plain } from '../services/tagModel';
 
 const dedupe = (items) => {
   const seen = new Set();
@@ -44,6 +46,7 @@ export function summaryFromRow(r) {
 export function headerFromRow(r) {
   return {
     ...newTag(),
+    issuesLoaded: false,
     id: text(r, 'Id'),
     tagNumber: text(r, 'tag_number'),
     status: text(r, 'status') || 'Draft',
@@ -114,8 +117,64 @@ export const LINE_TABLES = {
   },
   materials: { table: 'tag_materials', fields: (l) => ({ material_id: l.materialId, qty: nPlain(l.qty), length: l.length === '' ? undefined : nPlain(l.length) }) },
   equipment: { table: 'tag_equipment', fields: (l) => ({ equipment_id: l.equipmentId, qty: nPlain(l.qty) }) },
+  issues: { table: 'tag_issues', fields: (l) => ({ issue_id: l.issueId }) },
   expenses: { table: 'tag_other_expenses', fields: (l) => ({ expenses_id: l.expenseId, expenses_description: l.description, qty: n2(l.amount) }) },
 };
+
+/** How an issue is shown everywhere: "5 : Room has been completely dropped and punched". */
+export const issueLabel = (displayId, text) => `${displayId} : ${text}`.trim();
+
+const issueOption = (i) => ({
+  issueId: i.id,
+  displayId: i.displayId,
+  title: i.title || '',
+  label: issueLabel(i.displayId, i.description || i.title || ''),
+});
+
+export const issueRowFromRow = (r) => ({ id: text(r, 'Id'), issueId: text(r, 'issue_id') });
+
+/** A customer's contact, as offered in the Sign tab's approver list. */
+export const approverFromRow = (r) => {
+  const first = text(r, 'firstname', 'FirstName');
+  const last = text(r, 'lastname', 'LastName');
+  return {
+    id: text(r, 'Id'),
+    name: text(r, 'fullname') || `${first} ${last}`.trim() || text(r, 'Email'),
+    firstName: first,
+    lastName: last,
+    email: text(r, 'Email'),
+    customerId: text(r, 'customerID', 'CustomerID'),
+    customerName: text(r, 'CustomerName'),
+  };
+};
+
+/** A saved signature row (tag_signature). */
+export const signatureFromRow = (r) => ({
+  id: text(r, 'Id'),
+  name: text(r, 'name'),
+  role: text(r, 'role'),
+  description: text(r, 'description'),
+  signedAt: text(r, 'CreatedDate'),
+  image: signatureSrc(text(r, 'signature')),
+});
+
+/**
+ * Something an <img> can show for a stored signature: a data URL, a web link, or bare base64 of a PNG / JPEG / SVG.
+ * Anything else (including empty) gives null, so a row we can't draw is listed without a picture.
+ */
+export function signatureSrc(value) {
+  const v = String(value || '').trim();
+  if (!v) return null;
+  if (/^data:image\/(png|jpe?g|gif|webp|svg\+xml);/i.test(v)) return v;
+  if (/^https?:\/\/\S+$/i.test(v)) return v;
+  const b64 = v.replace(/\s+/g, '');
+  if (b64.length > 60 && /^[A-Za-z0-9+/]+=*$/.test(b64)) {
+    if (b64.startsWith('iVBOR')) return `data:image/png;base64,${b64}`;
+    if (b64.startsWith('/9j/')) return `data:image/jpeg;base64,${b64}`;
+    if (b64.startsWith('PHN2Zy') || b64.startsWith('PD94bWw')) return `data:image/svg+xml;base64,${b64}`;
+  }
+  return null;
+}
 
 export const photoFromRow = (r) => {
   const url = text(r, 'photo_url');
@@ -191,6 +250,50 @@ export function planSave(form, saved) {
 /* ------------------------------------------------------------------ API */
 
 export const apexApi = {
+  /** Issues come from the job's Autodesk Forma project. */
+  issues: {
+    cache: new Map(),
+    /**
+     * The open / in-progress issues of the job's Forma project (cached for the session; `clear()` to read again). Resolves to { projectId, options } where
+     * options are { issueId, displayId, title, label }; projectId is null when the job has no Forma project.
+     */
+    options(jobNo) {
+      const key = String(jobNo);
+      if (!this.cache.has(key)) {
+        const p = (async () => {
+          // No caller's abort signal here: the request is shared (and cached) by every caller.
+          const project = await formaFindProject(key);
+          if (!project) return { projectId: null, options: [] };
+          const list = await formaIssues(project.id);
+          return { projectId: project.id, options: list.map(issueOption) };
+        })().catch((e) => {
+          this.cache.delete(key); // allow a retry
+          throw e;
+        });
+        this.cache.set(key, p);
+      }
+      return this.cache.get(key);
+    },
+    clear() {
+      this.cache.clear();
+    },
+    /** Saved rows as editor lines, with each issue's label (looked up in Forma if it is no longer open). */
+    async describe(rows, { projectId, options }, signal) {
+      const known = new Map(options.map((o) => [o.issueId, o]));
+      const missing = [...new Set(rows.map((r) => r.issueId))].filter((id) => !known.has(id)).slice(0, 25);
+      if (projectId) {
+        await Promise.all(missing.map(async (id) => {
+          const i = await formaIssue(projectId, id, signal).catch(() => null);
+          if (i) known.set(id, issueOption(i));
+        }));
+      }
+      return rows.map((r) => {
+        const o = known.get(r.issueId);
+        return { key: lineKey(), id: r.id, issueId: r.issueId, displayId: o?.displayId ?? '', label: o?.label || `Issue ${r.issueId.slice(0, 8)}…` };
+      });
+    },
+  },
+
   master: {
     employees: async () =>
       (await query('employees'))
@@ -202,7 +305,6 @@ export const apexApi = {
     materials: async () => unique((await query('materials')).map(masterItem)),
     equipment: async () => unique((await query('equipment')).map(masterItem)),
     expenses: async () => unique((await query('expenses')).map(masterItem)),
-    issues: async () => (apexConfig.emachine.queries.issues ? (await query('issues')).map((r) => ({ label: labelOf(r) })) : []),
     jobs: async (divisions) => {
       const list = (divisions?.length ? divisions : apexConfig.app.defaultDivisions).slice(0, 20);
       return (await query('jobs', { divisions: list.map(sqlString).join(',') })).map((r) => ({
@@ -231,6 +333,32 @@ export const apexApi = {
       const name = String(description || '').trim();
       if (!name) throw new ApiError('Enter an equipment name');
       const [res] = await runWrites([writeRequest('equipment_master', { description: name })]);
+      return insertedId(res);
+    },
+    /** The customer's contacts (who can approve a tag for that customer). */
+    approvers: async (customerId) => {
+      if (!customerId) return [];
+      const rows = (await query('approvers', { customerId: sqlString(String(customerId).slice(0, 50)) })).map(approverFromRow).filter((a) => a.id && a.name);
+      return rows.sort((a, b) => a.name.localeCompare(b.name));
+    },
+    /** A customer's name (only used when the tag and its contacts don't carry it). */
+    customerName: async (customerId) => {
+      if (!customerId) return '';
+      const [r] = await query('customerName', { customerId: sqlString(String(customerId).slice(0, 50)) });
+      return r ? text(r, 'CustomerName') : '';
+    },
+    /**
+     * Add a contact for a customer (the "+" next to the approver). Resolves to eMachine's new Id when the response
+     * has one, else null (reload the list and look for the email).
+     */
+    createApprover: async ({ customerId, firstName, lastName, email }) => {
+      const first = String(firstName || '').trim();
+      const last = String(lastName || '').trim();
+      const mail = String(email || '').trim();
+      if (!customerId) throw new ApiError('This tag has no customer, so an approver can’t be added.');
+      if (!first) throw new ApiError('Enter a first name');
+      if (!EMAIL_RE.test(mail)) throw new ApiError('Enter a valid email address');
+      const [res] = await runWrites([writeRequest('customercontact', { FirstName: first, LastName: last, Email: mail, CustomerID: customerId })]);
       return insertedId(res);
     },
     /** Fresh customer / PM email / address for one job (used when a tag is started). */
@@ -299,7 +427,7 @@ export const apexApi = {
         id = rows.length && text(rows[0], 'Id') ? Number(text(rows[0], 'Id')) : null;
       }
       if (id == null) throw new ApiError('eMachine created the tag but didn’t return its Id; refresh the list to find it.');
-      const lines = planSave({ ...form, id: String(id) }, { ...form, id: String(id), labor: [], materials: [], equipment: [], expenses: [] })
+      const lines = planSave({ ...form, id: String(id) }, { ...form, id: String(id), labor: [], materials: [], equipment: [], expenses: [], issues: [] })
         .filter((r) => r.table !== 'tags');
       await runWrites(lines);
       return apexApi.tags.get(String(id));
@@ -311,6 +439,12 @@ export const apexApi = {
       if (!entry) throw new ApiError(`Unknown line type “${kind}”`);
       await runDelete(entry.table, id);
     },
+
+    /** The issues saved on a tag: [{ id, issueId }] (tag_issues rows; the issue's details live in Autodesk Forma). */
+    issueRows: async (id, signal) => (await query('tagIssues', { tagId: sqlInt(id) }, signal)).map(issueRowFromRow).filter((r) => r.issueId),
+
+    /** Signatures saved on a tag (tag_signature rows), oldest first. */
+    signatures: async (id, signal) => (await query('tagSignature', { tagId: sqlInt(id) }, signal)).map(signatureFromRow),
 
     /** A tag's attached files (photos, audio, documents), oldest first. */
     photos: async (id, signal) => (await query('tagPhotos', { tagId: sqlInt(id) }, signal)).map(photoFromRow),
@@ -357,6 +491,48 @@ export const apexApi = {
         console.warn('The tag_photos row was deleted, but the Dropbox copy could not be removed:', e);
         return false;
       }
+    },
+
+    /**
+     * Everything the signed document lists, read back from eMachine (so it matches what was saved):
+     * the job, the grouped labor, materials, equipment, expenses, files and the issues' labels.
+     * Run this after the tag has been saved.
+     */
+    submitData: async (tag, signal) => {
+      const tagId = sqlInt(tag.id);
+      const premium = tag.isPremium ? '1' : '0';
+      const [jobs, labor, materials, equipment, expenses, photos, issueRows] = await Promise.all([
+        tag.jobNo ? query('submitJob', { jobNo: sqlString(String(tag.jobNo).slice(0, 50)) }, signal) : [],
+        query('submitLabor', { tagId, premium }, signal),
+        query('submitMaterials', { tagId }, signal),
+        query('submitEquipment', { tagId }, signal),
+        query('submitExpenses', { tagId }, signal),
+        query('submitPhotos', { tagId }, signal),
+        apexApi.tags.issueRows(tag.id, signal),
+      ]);
+      let issues = [];
+      if (issueRows.length) {
+        const facts = await apexApi.issues.options(tag.jobNo);
+        const lines = await apexApi.issues.describe(issueRows, facts, signal);
+        if (lines.some((l) => l.displayId === '')) {
+          throw new ApiError('Couldn’t read the details of every issue from Autodesk Forma, so the document can’t be made yet. Try again.');
+        }
+        issues = lines.map((l) => l.label);
+      }
+      return { job: jobs[0] || null, labor, materials, equipment, expenses, photos, issues };
+    },
+
+    /**
+     * After the signed document was created: read the tag again and, only if it is still editable (the service
+     * didn't change its status), mark it Submitted. Resolves to the tag as eMachine now has it.
+     */
+    finishSubmit: async (id) => {
+      let tag = await apexApi.tags.get(id);
+      if (isEditable(tag)) {
+        await runWrites([writeRequest('tags', { Id: sqlInt(id), status: 'Submitted' })]);
+        tag = await apexApi.tags.get(id);
+      }
+      return tag;
     },
 
     /** Change only the status (submit/approve flows, once enabled). */

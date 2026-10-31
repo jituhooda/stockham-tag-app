@@ -109,8 +109,72 @@ Files can only be added to a **saved** tag. **Delete:** trash → "Are you sure 
 **To confirm:** the `<appId>` GUID in the path was copied from one captured upload, and the upload response was not
 captured. The app takes the first Dropbox link anywhere in the response, and refuses to attach if there isn't one.
 
+## Issues
+
+The Issues tab links Autodesk Forma issues to the tag.
+
+- **Choices (the dropdown):** the job's Forma project is found with `GET …/accounts/{accountId}/projects?filter[jobNumber]=<job no>`,
+  then its issues with `GET …/construction/issues/v1/projects/{projectId}/issues?filter[status]=open,in_progress&fields=id,displayId,title,description&limit=200`
+  (more pages are read if there are more than 200). Both are called straight from the browser with the Autodesk token from `forma.tokenUrl`
+  (see "Adding a tag: Autodesk Forma check"). Each choice reads `<displayId> : <description>`, e.g. "5 : Room has been completely dropped and punched".
+  The list is kept for the session.
+- **Saved issues:** `select * from tag_issues where tag_id = '<id>'` (`tagIssues`). A row is `Id`, `tag_id`, `issue_id` where `issue_id` is
+  the Forma issue's id (a GUID). Labels come from the list above; an issue that is no longer open is looked up one by one
+  (`…/issues/{issueId}`).
+- **Selecting:** a pick is added to "Selected Issues" and saved with **Save**: `POST /datamodel/api/tag_issues` with `tag_id` and `issue_id`
+  per new pick (header `eml-service: True`). Picking an issue that is already in the list (saved or not) shows "This issue is already added".
+- **Removing:** the trash asks "Are you sure to delete?", then `delete from tag_issues where Id='<id>'` for a saved issue (same style as
+  cost lines); a pick that was never saved is just removed.
+- **Not captured:** the insert and delete above are inferred from the `tag_issues` table (three columns) and the other captured writes,
+  not from a captured request. Check them once on a test tag. A job with no Forma project, or an unreachable Forma, shows a message and
+  keeps the saved issues visible.
+
+## Sign
+
+- **Title:** "Approver from {customer name}". The name comes from the tag's customer (`customer` table, via the contacts query
+  or `select CustomerName from customer where CustomerID = '<id>'`), so it changes with the tag.
+- **Approver dropdown (captured):** the customer's contacts:
+  `select CONCAT(cc.firstname, ' ', cc.lastname) AS fullname, cc.Id, cc.firstname, cc.lastname, cc.Email, cc.customerID, c.CustomerName
+  FROM customercontact cc JOIN customer c ON cc.customerID = c.CustomerID WHERE cc.customerID = '<tag's CustomerID>'` (`approvers`).
+  The list shows names, sorted; the chosen contact's name and email appear under the signature pad, and the email pre-fills
+  "Send for signature". The choice and the drawn signature are not saved by **Save** and don't count as unsaved changes.
+- **Signature on file (captured read):** `select * from tag_signature where tag_id='<id>'` (`tagSignature`) is read when the tab opens.
+  Columns: `Id, tag_id, name, role, signature, CreatedDate, CreatedById, LastModifiedDate, LastModifiedById, description`. A tag that
+  already has a row shows "Signed" with the name, role, date and, if the `signature` value is an image (data URL, link or base64
+  PNG/JPEG/SVG), the picture. The table was empty when this was written, so the stored format is not confirmed.
+- **"+" (inferred, not captured):** "Add New Approver" (first name, last name, email) sends `POST /datamodel/api/customercontact` with
+  `FirstName`, `LastName`, `Email`, `CustomerID` (the table's four columns; header `eml-service: True`), reloads the contacts and
+  selects the new one. An email that already exists is selected instead of added again.
+- **Submit, sign in person (captured):** see below. **Send for signature** is still disabled: its request hasn't been captured.
+
+## Submit
+
+One request does everything downstream (the PDF, the Autodesk Cost change order and the emails), so the app doesn't call Autodesk
+or the other calls in the existing app's save sequence (trade list, Forma project lookup, PCO, budgets, templates, cost-items,
+list refresh). What the app does, in order:
+
+1. Checks the tag (job, description, a cost line, approver, signature) and the document (`signedDocProblems`). Problems open the tab to fix.
+2. Saves the tag with **Save** first when there are unsaved changes or the tag is new, so the document is made from what is stored.
+3. Reads back (`tags.submitData`): the job (`select *, c.CustomerName from job j JOIN customer c ... where j.JobNo = '<job>'`),
+   labor (grouped per person and trade; ST/OT/DT, or POT/PDT for OT/Premium tags), materials, equipment, other expenses, photo URLs
+   and the Forma issue labels (`number : description`). The queries are `submit*` in `integrations.config.json`.
+4. `POST https://emachine.instantar.io/proxyapi/api/https://stockham.emachine.ai/stockham/create-stockham-signed-doc` with a JSON body
+   (header `instantarusername` = the signed-in user; no `Authorization`, as in the capture). Fields and order match
+   `Body_Json_create-stockham-signed-doc.json`: `description, customer_name, customer_email, job_name, job_address, job_city_zip,
+   tag_date, job_num, tag_num, pm_email, originator_email, signature_image_b64, signer_name, pm_name, issue_table, labor_table,
+   material_table, equipment_table, expense_table, files_table`. Numbers are sent as text; the signature is bare base64 PNG.
+5. Shows the result. The service replies with `doc_id`, `pdf_link` (the signed PDF), `sign_link` and an `autodesk` block. The app shows a
+   "Submitted" popup with **Open signed document** (`pdf_link`, new tab) and **View in Autodesk** (`autodesk.web_view_url`), and keeps the same
+   links in a "Signed document" card on the Sign tab for the rest of the browser session. `pdf_link` is a time-limited link, so the card hides
+   it once its `Expires` time has passed. Only http(s) links are used.
+6. Re-reads the tag. If it is still a draft (the service didn't change it) the app sets `Submitted`; if the service already did,
+   the app writes nothing. The tag then opens read-only.
+
+Assumptions to confirm with a real run: `pm_email` is the job's PM email (the sample used the originator's), `job_city_zip` is the
+job's City, and the service (not the app) updates the tag's status/signature columns. Tested only against fakes, never live.
+
 ## Still to capture
 
 For each, a "Copy as cURL" from the existing app plus the response:
 the response of the new-tag insert (does it return the Id?), deleting a whole tag, the upload response,
-selecting an issue, and submitting a signature.
+saving and removing an issue, "Send for signature", and the response of the signed-document service.

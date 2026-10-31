@@ -91,7 +91,7 @@ function TagDetail({ id }) {
   const tag = editor.form;
   const isNew = tag.id === NEW_TAG_ID;
   const readOnly = !isEditable(tag);
-  const props = { tag, editor, edit: editor.edit, save, follow, goTo, readOnly, sub, busy: editor.busy };
+  const props = { tag, editor, edit: editor.edit, save, follow, goTo, refresh, readOnly, sub, busy: editor.busy };
   const { Component } = TABS.find((t) => t.key === tab);
 
   return (

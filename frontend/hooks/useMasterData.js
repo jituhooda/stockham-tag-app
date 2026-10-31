@@ -22,12 +22,12 @@ export const preloadMasterData = (kind) => load(kind, apexApi.master[kind]).catc
 
 /**
  * Reference list from eMachine: employees, materials, equipment, expenses,
- * trades, issues, or jobs (pass divisions).
+ * trades, jobs (pass divisions) or approvers (pass a customer id).
  */
-export function useMasterData(kind, divisions) {
-  const key = kind === 'jobs' ? `jobs:${(divisions || []).join('|')}` : kind;
+export function useMasterData(kind, arg) {
+  const key = kind === 'jobs' ? `jobs:${(arg || []).join('|')}` : kind === 'approvers' ? `approvers:${arg}` : kind;
   const [state, setState] = useState(() => ({ data: [], loading: true, error: '' }));
-  const fetcher = kind === 'jobs' ? () => apexApi.master.jobs(divisions) : apexApi.master[kind];
+  const fetcher = kind === 'jobs' ? () => apexApi.master.jobs(arg) : kind === 'approvers' ? () => apexApi.master.approvers(arg) : apexApi.master[kind];
 
   /** Drop the cached list and read it again from eMachine (after adding an item). Resolves to the new list. */
   const reload = useCallback(async () => {
@@ -35,7 +35,7 @@ export function useMasterData(kind, divisions) {
     const data = await load(key, fetcher);
     setState({ data, loading: false, error: '' });
     return data;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` captures divisions
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` captures the argument
   }, [key, kind]);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export function useMasterData(kind, divisions) {
     return () => {
       live = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` captures divisions
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` captures the argument
   }, [key, kind]);
 
   return { ...state, reload };

@@ -11,6 +11,7 @@ const env = import.meta.env;
 const emachine = integrations.emachine;
 const forma = integrations.forma;
 const uploads = integrations.uploads;
+const submit = integrations.submit;
 const bearer = (v) => (v || '').trim().replace(/^Bearer\s+/i, '');
 const flag = (value, fallback) => (value == null || value === '' ? fallback : String(value).toLowerCase() === 'true');
 
@@ -23,7 +24,7 @@ export const apexConfig = {
     baseUrl: (env.VITE_EMACHINE_BASE_URL ?? '').replace(/\/$/, ''),
     queryPath: emachine.queryPath,
     tablePath: emachine.tablePath,
-    queries: { ...emachine.queries, ...(features.issuesQuery ? { issues: features.issuesQuery } : {}) },
+    queries: emachine.queries,
     writes: emachine.writes,
     timeoutMs: (emachine.timeoutSeconds || 30) * 1000,
     /** Optional token from .env (a leading "Bearer " is accepted). Without it, users paste their own on the sign-in screen. */
@@ -34,6 +35,8 @@ export const apexConfig = {
      */
     writesEnabled: flag(env.VITE_EMACHINE_WRITES, false),
   },
+  /** Submit: one JSON document to the signed-document service. */
+  submit: { url: submit.url, timeoutMs: (submit.timeoutSeconds || 180) * 1000 },
   /** File uploads (photos, audio, documents) through eMachine's cloud-storage service. */
   uploads: {
     url: uploads.url,
@@ -53,12 +56,14 @@ export const apexConfig = {
     accountId: forma.accountId,
     projectsPath: forma.projectsPath,
     jobFilter: forma.jobFilter,
+    issuesPath: forma.issuesPath,
+    issueStatuses: forma.issueStatuses || 'open,in_progress',
+    issuePageSize: forma.issuePageSize || 200,
     tokenUrl: (env.VITE_FORMA_TOKEN_URL || forma.tokenUrl || '').trim(),
   },
   editableStatuses: appConfig.editableStatuses || ['Draft', 'Rejected'],
   storageKeys: {
     token: 'stockham.emachineToken',
     settings: 'stockham.settings.v2',
-    approvers: 'stockham.approvers.v1',
   },
 };

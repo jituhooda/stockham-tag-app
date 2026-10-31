@@ -20,6 +20,16 @@
       "expenses": "select * from expenses_master",
       "division": "select Division from employees where EMPLOYEE = {employee}",
       "deleteLine": "delete from {table} where Id={id}",
+      "approvers": "select CONCAT(cc.firstname, ' ', cc.lastname) AS fullname, cc.Id, cc.firstname, cc.lastname, cc.Email, cc.customerID, c.CustomerName FROM customercontact cc JOIN customer c ON cc.customerID = c.CustomerID WHERE cc.customerID = {customerId}",
+      "customerName": "select CustomerName from customer where CustomerID = {customerId}",
+      "tagSignature": "select * from tag_signature where tag_id='{tagId}'",
+      "submitJob": "select *, c.CustomerName from job j JOIN customer c ON j.CustomerID = c.CustomerID where j.JobNo = {jobNo}",
+      "submitLabor": "SELECT tl.employee_name AS EmployeeName, TRIM(SUBSTRING_INDEX(t.TradeName, ':', 1)) AS TradeName, CASE WHEN {premium} = 0 THEN SUM(COALESCE(tl.regularhours, 0)) ELSE NULL END AS ST, CASE WHEN {premium} = 0 THEN SUM(COALESCE(tl.overtime, 0)) ELSE NULL END AS OT, CASE WHEN {premium} = 0 THEN SUM(COALESCE(tl.doubletime, 0)) ELSE NULL END AS DT, CASE WHEN {premium} = 1 THEN SUM(COALESCE(tl.overtime, 0)) ELSE NULL END AS POT, CASE WHEN {premium} = 1 THEN SUM(COALESCE(tl.doubletime, 0)) ELSE NULL END AS PDT FROM tag_labor tl INNER JOIN trade t ON t.Id = tl.trade_id WHERE tl.tag_id = {tagId} GROUP BY tl.employee_id, tl.employee_name, tl.trade_id, t.TradeName ORDER BY tl.employee_name, t.TradeName;",
+      "submitMaterials": "SELECT mm.description AS Description, TRIM(SUBSTRING_INDEX(t.TradeName, ':', 1)) AS Trade, tm.qty AS Qty, tm.length AS Length FROM tag_materials tm INNER JOIN materials_master mm ON mm.Id = tm.material_id LEFT JOIN trade t ON t.Id = mm.CostCodeID WHERE tm.tag_id = {tagId} ORDER BY mm.description;",
+      "submitEquipment": "SELECT em.description AS Description, te.qty AS Qty FROM tag_equipment te INNER JOIN equipment_master em ON em.Id = te.equipment_id WHERE te.tag_id = {tagId} ORDER BY em.description;",
+      "submitExpenses": "SELECT expenses_description AS Description, qty AS Amount FROM tag_other_expenses WHERE tag_id = {tagId} ORDER BY expenses_description;",
+      "submitPhotos": "SELECT photo_url FROM tag_photos WHERE tag_id = {tagId} ORDER BY uploaded_at;",
+      "tagIssues": "select * from tag_issues where tag_id = '{tagId}'",
       "tagPhotos": "SELECT tp.Id, tp.photo_url, tp.description, tp.uploaded_at FROM tag_photos tp WHERE tp.tag_id = {tagId} ORDER BY tp.Id",
       "jobDetails": "SELECT CustomerID, PMEmail, Address FROM job WHERE JobNo = {jobNo}",
       "jobs": "select *, CONCAT(`JobNo`, ' : ',`JobName`) as CJobName from job where CustomerName !='' AND CustomerName is NOT NULL AND Division in ({divisions}) order by Address ASC"
@@ -33,7 +43,9 @@
       "tag_other_expenses": ["expenses_id", "expenses_description", "qty"],
       "materials_master": ["description", "CostCodeID"],
       "equipment_master": ["description"],
-      "tag_photos": ["photo_url", "description"]
+      "tag_photos": ["photo_url", "description"],
+      "tag_issues": ["issue_id"],
+      "customercontact": ["FirstName", "LastName", "Email", "CustomerID"]
     }
   },
   "uploads": {
@@ -48,12 +60,20 @@
     "timeoutSeconds": 120,
     "image": { "maxPixels": 2560, "quality": 0.88 }
   },
+  "submit": {
+    "comment": "Submit (Sign tab) saves the tag, then sends one JSON document to eMachine's signed-document service, which does everything else (the PDF, the Autodesk Cost change order, the emails). Called through eMachine's proxy, as the existing app does; the request carries only the user's email in the instantarusername header.",
+    "url": "https://emachine.instantar.io/proxyapi/api/https://stockham.emachine.ai/stockham/create-stockham-signed-doc",
+    "timeoutSeconds": 180
+  },
   "forma": {
     "comment": "Before a tag is created for a job, the job must exist as a project in Autodesk Forma. The browser calls Autodesk directly. The Autodesk bearer token is fetched on demand from tokenUrl (public, no login) and renewed when it expires.",
     "tokenUrl": "https://stockham.emachine.ai/stockham/token",
     "apiBase": "https://developer.api.autodesk.com",
     "accountId": "2a778b1d-efbb-4537-8c06-cab88ba77e32",
     "projectsPath": "/construction/admin/v1/accounts/{accountId}/projects",
+    "issuesPath": "/construction/issues/v1/projects/{projectId}/issues",
+    "issueStatuses": "open,in_progress",
+    "issuePageSize": 200,
     "jobFilter": "filter[jobNumber]"
   }
 }

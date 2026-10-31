@@ -70,7 +70,10 @@ browser ──▶ nginx (React app) ──/datamodel──▶ eMachine
 | 🧪 Create a tag (Add Tag → pick a job) | wired to the fields of a captured save; not yet run against live eMachine |
 | ✅ Remove a cost line | asks to confirm, then deletes in eMachine |
 | 🧪 Files: list, add (photo editor), delete | wired to the captured upload; not yet run against live eMachine |
-| ⏳ Issues, sign/submit | **disabled** until their eMachine APIs are captured |
+| 🧪 Issues: pick Forma issues, save, remove | reads are captured; the save/remove requests are inferred |
+| 🧪 Sign: approver list, add approver, signature pad | list is captured; "+" is inferred |
+| 🧪 Submit (sign in person) | saves, reads back the cost lines, posts one request to the signed-document service; tested only against fakes |
+| ⏳ Send for signature | **disabled** until its request is captured |
 
 ## Repository layout
 

@@ -41,9 +41,14 @@ export function useTagEditor(id, initial) {
     setDirty(true);
   }, []);
 
+  /** Patch the form without marking it changed: for things Save doesn't write (the approver and signature). */
+  const editLocal = useCallback((patch) => {
+    setForm((f) => ({ ...f, ...(typeof patch === 'function' ? patch(f) : patch) }));
+  }, []);
+
   const accept = useCallback((t) => {
-    // Keep things eMachine doesn't store yet (issues, approver, signature) across reloads.
-    setForm((f) => ({ ...t, issues: f?.issues ?? [], signature: f?.signature ?? t.signature }));
+    // Keep what eMachine doesn't store yet (approver, signature) across reloads. Issues are read again by the Issues tab.
+    setForm((f) => ({ ...t, signature: f?.signature ?? t.signature }));
     setSaved(t);
     setDirty(false);
     dirtyRef.current = false; // callers often navigate before the next render
@@ -59,6 +64,12 @@ export function useTagEditor(id, initial) {
     }
   }, [form, saved, accept]);
 
+  /** The tag's saved issues were read: they become both the baseline and the form's list (unsaved picks are kept). */
+  const setSavedIssues = useCallback((rows) => {
+    setSaved((s) => (s ? { ...s, issuesLoaded: true, issues: rows } : s));
+    setForm((f) => (f ? { ...f, issuesLoaded: true, issues: [...rows.map((r) => ({ ...r })), ...f.issues.filter((i) => !i.id)] } : f));
+  }, []);
+
   /** A saved line was deleted in eMachine: forget it everywhere without marking the form changed. */
   const dropLine = useCallback((kind, lineKey) => {
     const without = (t) => (t ? { ...t, [kind]: t[kind].filter((l) => l.key !== lineKey) } : t);
@@ -72,5 +83,5 @@ export function useTagEditor(id, initial) {
     dirtyRef.current = false;
   }, [saved]);
 
-  return { saved, form, dirty, dirtyRef, loading, error, busy, edit, save, discard, dropLine };
+  return { saved, form, dirty, dirtyRef, loading, error, busy, edit, editLocal, accept, save, discard, dropLine, setSavedIssues };
 }
