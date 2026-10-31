@@ -10,6 +10,7 @@ import integrations from '../../config/integrations.config.json';
 const env = import.meta.env;
 const emachine = integrations.emachine;
 const forma = integrations.forma;
+const uploads = integrations.uploads;
 const bearer = (v) => (v || '').trim().replace(/^Bearer\s+/i, '');
 const flag = (value, fallback) => (value == null || value === '' ? fallback : String(value).toLowerCase() === 'true');
 
@@ -32,6 +33,19 @@ export const apexConfig = {
      * save is logged to the console and nothing is sent.
      */
     writesEnabled: flag(env.VITE_EMACHINE_WRITES, false),
+  },
+  /** File uploads (photos, audio, documents) through eMachine's cloud-storage service. */
+  uploads: {
+    url: uploads.url,
+    deleteUrl: uploads.deleteUrl,
+    providerName: uploads.providerName,
+    customerName: uploads.customerName,
+    pathTemplate: uploads.pathTemplate,
+    appId: uploads.appId,
+    maxBytes: (uploads.maxFileMb || 25) * 1024 * 1024,
+    timeoutMs: (uploads.timeoutSeconds || 120) * 1000,
+    imageMaxPixels: uploads.image?.maxPixels || 2560,
+    imageQuality: uploads.image?.quality || 0.88,
   },
   /** Autodesk Forma project lookup (called directly from the browser). Its short-lived token is fetched from tokenUrl on demand. */
   forma: {

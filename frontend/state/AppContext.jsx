@@ -38,7 +38,7 @@ export function AppProvider({ children }) {
 
   const user = useMemo(() => {
     const c = tokenClaims(token);
-    return { name: c.name || c.preferred_username || c.email || c.sub || 'Signed in', email: c.email || '', employee: c.employeeid || '' };
+    return { name: c.name || c.preferred_username || c.email || c.sub || 'Signed in', email: [c.email, c.preferred_username, c.sub].find((v) => typeof v === 'string' && v.includes('@')) || '', employee: c.employeeid || '' };
   }, [token]);
 
   // First run: take the employee id from the token and look up their division.

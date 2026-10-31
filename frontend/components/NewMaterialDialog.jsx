@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMasterData } from '../hooks/useMasterData';
 import { IconCheck, IconClose } from './icons';
+import { Overlay } from './ui';
 
 /**
  * "+" next to a material's Description: add a new item to the material list.
@@ -38,6 +39,7 @@ export function NewMaterialDialog({ onCancel, onCreate }) {
   };
 
   return (
+    <Overlay>
     <div className="dialog-backdrop" onPointerDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
       <form className="dialog dialog--form" role="dialog" aria-modal="true" aria-label="Add New Material" aria-busy={busy} onSubmit={submit}>
         <h2 className="dialog__title">Add New Material</h2>
@@ -61,5 +63,6 @@ export function NewMaterialDialog({ onCancel, onCreate }) {
         </div>
       </form>
     </div>
+    </Overlay>
   );
 }

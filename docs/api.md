@@ -84,8 +84,33 @@ created and the existing item is selected. Equipment works the same way: the "+"
 `POST /datamodel/api/equipment_master` with `description=<name>`, then reloads with
 `select * from equipment_master`. Expenses has no "+" yet; it would need its own capture.
 
+## Files (attachments)
+
+**List:** `SELECT tp.Id, tp.photo_url, tp.description, tp.uploaded_at FROM tag_photos tp WHERE tp.tag_id = <id>`
+(`tagPhotos` in `config/integrations.config.json`). Photos show as thumbnails; audio, video and documents show an icon.
+Tapping a file opens its link.
+
+**Add (the "+" → Photos & Videos / Audio / Documents):** the phone's own picker opens. A picked **photo** first opens the
+editor (crop by dragging the box or its handles, flip left-right / top-bottom, rotate 90°; Cancel / Done). Then:
+
+1. `POST /cloudproviders/app/cloud_storage/upload`, `multipart/form-data`, fields in this order:
+   `path` = `/Stockham/prod/<appId>/<user email>/Misc`, `provider_name` = `SupportEmachine-Dropbox`,
+   `customer_name` = `Basic`, then `file`. (`uploads` in `config/integrations.config.json`.) eMachine stores the file
+   in Dropbox and returns its link.
+2. `POST /datamodel/api/tag_photos` with `tag_id`, `photo_url` (the returned link) and `description` (the file name).
+3. The list is read again.
+
+No Dropbox key or token is used by the app: the upload goes through eMachine with the user's own eMachine token, as the
+existing app does. Edited photos are re-encoded as JPEG (long side at most `uploads.image.maxPixels`, quality
+`uploads.image.quality`); an untouched JPEG is sent exactly as picked. Files over `uploads.maxFileMb` (25) are refused.
+Files can only be added to a **saved** tag. **Delete:** trash → "Are you sure to delete?" →
+`delete from tag_photos where Id='<id>'`; this removes the link from the tag only (the file stays in Dropbox).
+
+**To confirm:** the `<appId>` GUID in the path was copied from one captured upload, and the upload response was not
+captured. The app takes the first Dropbox link anywhere in the response, and refuses to attach if there isn't one.
+
 ## Still to capture
 
 For each, a "Copy as cURL" from the existing app plus the response:
-the response of the new-tag insert (does it return the Id?), deleting a whole tag, uploading a
-file, selecting an issue, and submitting a signature.
+the response of the new-tag insert (does it return the Id?), deleting a whole tag, the upload response,
+selecting an issue, and submitting a signature.

@@ -20,6 +20,7 @@
       "expenses": "select * from expenses_master",
       "division": "select Division from employees where EMPLOYEE = {employee}",
       "deleteLine": "delete from {table} where Id={id}",
+      "tagPhotos": "SELECT tp.Id, tp.photo_url, tp.description, tp.uploaded_at FROM tag_photos tp WHERE tp.tag_id = {tagId} ORDER BY tp.Id",
       "jobDetails": "SELECT CustomerID, PMEmail, Address FROM job WHERE JobNo = {jobNo}",
       "jobs": "select *, CONCAT(`JobNo`, ' : ',`JobName`) as CJobName from job where CustomerName !='' AND CustomerName is NOT NULL AND Division in ({divisions}) order by Address ASC"
     },
@@ -31,8 +32,21 @@
       "tag_equipment": ["equipment_id", "qty"],
       "tag_other_expenses": ["expenses_id", "expenses_description", "qty"],
       "materials_master": ["description", "CostCodeID"],
-      "equipment_master": ["description"]
+      "equipment_master": ["description"],
+      "tag_photos": ["photo_url", "description"]
     }
+  },
+  "uploads": {
+    "comment": "Files are uploaded to eMachine's cloud-storage service (it stores them in Dropbox and returns the file link); the link is then saved on the tag in tag_photos. {appId} and {user} in pathTemplate are filled in: appId from this file, user = the signed-in user's email. CONFIRM appId (captured from the existing app).",
+    "url": "/cloudproviders/app/cloud_storage/upload",
+    "deleteUrl": "/cloudproviders/app/cloud_storage/delete",
+    "providerName": "SupportEmachine-Dropbox",
+    "customerName": "Basic",
+    "pathTemplate": "/Stockham/prod/{appId}/{user}/Misc",
+    "appId": "01f14f0d-aada-1940-82e4-0a4c70400082",
+    "maxFileMb": 25,
+    "timeoutSeconds": 120,
+    "image": { "maxPixels": 2560, "quality": 0.88 }
   },
   "forma": {
     "comment": "Before a tag is created for a job, the job must exist as a project in Autodesk Forma. The browser calls Autodesk directly. The Autodesk bearer token is fetched on demand from tokenUrl (public, no login) and renewed when it expires.",

@@ -5,7 +5,7 @@
  */
 import { apexConfig } from './apexConfig';
 import { formaProjectExists } from './forma';
-import { ApiError, insertedId, query, runDelete, runWrites, sqlInt, sqlString, writeRequest } from './apexHttp';
+import { ApiError, deleteCloudFile, fileUrlFrom, insertedId, query, runDelete, runWrites, uploadFile, sqlInt, sqlString, writeRequest } from './apexHttp';
 import { isoDate, labelOf, num, pick, text, truthy } from '../services/fields';
 import { NEW_TAG_ID, fixed, lineKey, newTag, plain } from '../services/tagModel';
 
@@ -116,6 +116,26 @@ export const LINE_TABLES = {
   equipment: { table: 'tag_equipment', fields: (l) => ({ equipment_id: l.equipmentId, qty: nPlain(l.qty) }) },
   expenses: { table: 'tag_other_expenses', fields: (l) => ({ expenses_id: l.expenseId, expenses_description: l.description, qty: n2(l.amount) }) },
 };
+
+export const photoFromRow = (r) => {
+  const url = text(r, 'photo_url');
+  const name = text(r, 'description') || decodeURIComponent(url.split('?')[0].split('/').pop() || '');
+  return { id: text(r, 'Id'), url, name, uploadedAt: text(r, 'uploaded_at') };
+};
+
+/** Kind of file, from its name: drives the thumbnail (photo) or icon (everything else). */
+export const fileKind = (name = '') => {
+  const ext = name.toLowerCase().split('.').pop();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'bmp'].includes(ext)) return 'image';
+  if (['mp4', 'mov', 'm4v', 'webm', 'avi', '3gp'].includes(ext)) return 'video';
+  if (['mp3', 'm4a', 'wav', 'aac', 'ogg', 'amr', 'flac'].includes(ext)) return 'audio';
+  return 'document';
+};
+
+/** Folder-safe user name for the upload path (the signed-in user's email). */
+const pathUser = (u) => String(u || '').replace(/[^A-Za-z0-9@._+-]/g, '_');
+/** File name as stored: no folders, no control characters, not too long. */
+const safeName = (n) => String(n || 'file').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').trim().slice(0, 150) || 'file';
 
 export const headerFields = (t) => ({
   tag_number: t.tagNumber.trim(),
@@ -290,6 +310,53 @@ export const apexApi = {
       const entry = LINE_TABLES[kind];
       if (!entry) throw new ApiError(`Unknown line type “${kind}”`);
       await runDelete(entry.table, id);
+    },
+
+    /** A tag's attached files (photos, audio, documents), oldest first. */
+    photos: async (id, signal) => (await query('tagPhotos', { tagId: sqlInt(id) }, signal)).map(photoFromRow),
+
+    /**
+     * Attach a file to a saved tag, as the existing app does: upload it to eMachine's cloud-storage service
+     * (which returns the stored file's link), then save that link on the tag in tag_photos.
+     */
+    attachFile: async ({ tagId, file, filename, user, signal }) => {
+      const id = sqlInt(tagId);
+      const owner = pathUser(user);
+      if (!owner) throw new ApiError('Sign in again to upload files.');
+      const up = apexConfig.uploads;
+      if (file.size > up.maxBytes) throw new ApiError(`That file is too large (limit ${Math.round(up.maxBytes / 1048576)} MB).`);
+      const name = safeName(filename || file.name);
+      const path = up.pathTemplate.replace('{appId}', up.appId).replace('{user}', owner);
+      const result = await uploadFile(up.url, { path, provider_name: up.providerName, customer_name: up.customerName }, file, name, signal);
+      const url = fileUrlFrom(result);
+      if (!url) throw new ApiError('The file was uploaded, but eMachine didn’t return its link, so it was not attached.');
+      await runWrites([writeRequest('tag_photos', { tag_id: id, photo_url: url, description: name })]);
+      return url;
+    },
+
+    /**
+     * Remove one attached file: its tag_photos row first (the same delete statement as cost lines), then the
+     * stored copy in Dropbox via eMachine's cloud-storage service. Pass the file's `name` and the signed-in `user`
+     * to remove the Dropbox copy too; it lives at the same path the upload used.
+     * Resolves to true when the Dropbox copy was removed, false when it was left in place.
+     */
+    deletePhoto: async (photoId, { name, user } = {}) => {
+      await runDelete('tag_photos', photoId);
+      const owner = pathUser(user);
+      if (!name || !owner) return false;
+      const up = apexConfig.uploads;
+      const folder = up.pathTemplate.replace('{appId}', up.appId).replace('{user}', owner);
+      try {
+        await deleteCloudFile(up.deleteUrl, {
+          provider_name: up.providerName,
+          customer_name: up.customerName,
+          file_name: `${folder}/${safeName(name)}`,
+        });
+        return true;
+      } catch (e) {
+        console.warn('The tag_photos row was deleted, but the Dropbox copy could not be removed:', e);
+        return false;
+      }
     },
 
     /** Change only the status (submit/approve flows, once enabled). */

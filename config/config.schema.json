@@ -98,9 +98,6 @@
         "sendForSignature": {
           "type": "boolean"
         },
-        "attachments": {
-          "type": "boolean"
-        },
         "issues": {
           "type": "boolean"
         },
@@ -122,6 +119,66 @@
       "properties": {
         "$schema": {
           "type": "string"
+        },
+        "uploads": {
+          "type": "object",
+          "required": [
+            "url",
+            "providerName",
+            "customerName",
+            "pathTemplate",
+            "appId"
+          ],
+          "properties": {
+            "comment": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string",
+              "pattern": "^/"
+            },
+            "deleteUrl": {
+              "type": "string",
+              "pattern": "^/"
+            },
+            "providerName": {
+              "type": "string"
+            },
+            "customerName": {
+              "type": "string"
+            },
+            "pathTemplate": {
+              "type": "string",
+              "pattern": "\\{user\\}"
+            },
+            "appId": {
+              "type": "string"
+            },
+            "maxFileMb": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "timeoutSeconds": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "image": {
+              "type": "object",
+              "properties": {
+                "maxPixels": {
+                  "type": "integer",
+                  "minimum": 256
+                },
+                "quality": {
+                  "type": "number",
+                  "minimum": 0.1,
+                  "maximum": 1
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
         },
         "forma": {
           "type": "object",

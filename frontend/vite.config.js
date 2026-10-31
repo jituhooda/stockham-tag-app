@@ -7,7 +7,11 @@ export default defineConfig(({ mode }) => {
   // origin and this proxy forwards it to eMachine (no CORS needed). nginx does
   // the same in production (infrastructure/nginx/nginx.conf).
   const target = env.EMACHINE_PROXY_TARGET || 'https://emachine.instantar.io';
-  const proxy = { '/datamodel': { target, changeOrigin: true, secure: true } };
+  const proxy = {
+    '/datamodel': { target, changeOrigin: true, secure: true },
+    // eMachine's cloud-storage service (file uploads from the Files tab).
+    '/cloudproviders': { target, changeOrigin: true, secure: true },
+  };
   return {
     plugins: [react()],
     server: { host: true, port: 5173, proxy, fs: { allow: ['..'] }, allowedHosts: ['aziro.ngrok.app'] },

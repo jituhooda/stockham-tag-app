@@ -71,13 +71,13 @@ export function extractRows(body) {
   return [];
 }
 
-async function send(url, init, signal) {
+async function send(url, init, signal, { timeoutMs = cfg.timeoutMs } = {}) {
   const headers = { Accept: 'application/json', ...init.headers };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(new DOMException('timeout', 'TimeoutError')), cfg.timeoutMs);
+  const timer = setTimeout(() => ctrl.abort(new DOMException('timeout', 'TimeoutError')), timeoutMs);
   signal?.addEventListener('abort', () => ctrl.abort(signal.reason), { once: true });
   let res;
   try {
@@ -164,6 +164,48 @@ export async function runDelete(table, id) {
     throw new WritesDisabledError([{ method: 'GET', url, table, statement }]);
   }
   await send(url, { method: 'GET', headers: { 'eml-service': 'True' } });
+}
+
+/**
+ * Send a file to eMachine's cloud-storage service as multipart form data (the existing app's request:
+ * fields first, the file last). The browser sets the multipart boundary, so no Content-Type is given here.
+ */
+export async function uploadFile(url, fields, file, filename, signal) {
+  if (!cfg.writesEnabled) {
+    console.info('[read-only] eMachine upload that would have been sent:', url, fields, filename);
+    throw new WritesDisabledError([{ method: 'POST', url, table: 'upload', fields, filename }]);
+  }
+  const form = new FormData();
+  for (const [k, v] of Object.entries(fields)) form.append(k, v);
+  form.append('file', file, filename);
+  return send(url, { method: 'POST', body: form }, signal, { timeoutMs: apexConfig.uploads.timeoutMs });
+}
+
+/** Remove a file from eMachine's cloud storage (Dropbox). `fields.file_name` is relative to the customer's root, like the upload `path`. */
+export async function deleteCloudFile(url, fields) {
+  if (!cfg.writesEnabled) {
+    console.info('[read-only] eMachine cloud delete that would have been sent:', url, fields);
+    throw new WritesDisabledError([{ method: 'POST', url, table: 'cloud_delete', fields }]);
+  }
+  await send(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(fields).toString(),
+  });
+}
+
+/** The stored file's link in an upload response, whatever shape it comes in (JSON of any depth, or plain text). */
+export function fileUrlFrom(response) {
+  const urls = [];
+  const walk = (v) => {
+    if (typeof v === 'string') {
+      const m = v.trim().match(/^"?(https?:\/\/[^\s"]+)"?$/);
+      if (m) urls.push(m[1]);
+    } else if (Array.isArray(v)) v.forEach(walk);
+    else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+  };
+  walk(response);
+  return urls.find((u) => /dropbox/i.test(u)) || urls[0] || null;
 }
 
 /** Find a new row's Id in an insert response, whatever envelope eMachine uses. */

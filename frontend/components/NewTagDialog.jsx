@@ -4,7 +4,7 @@ import { preloadMasterData, useMasterData } from '../hooks/useMasterData';
 import { jobFields } from '../services/tagModel';
 import { useApp } from '../state/AppContext';
 import { IconCheck, IconClose } from './icons';
-import { SearchSelect } from './ui';
+import { SearchSelect, Overlay } from './ui';
 
 /**
  * "Add Tag": pick the job, then ✓. The job must exist as a project in Autodesk Forma;
@@ -46,6 +46,7 @@ export function NewTagDialog({ onCancel, onConfirm }) {
   };
 
   return (
+    <Overlay>
     <div className="dialog-backdrop" onPointerDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
       <div className="dialog" role="dialog" aria-modal="true" aria-label="New tag" aria-busy={busy}>
         <div className="field">
@@ -69,5 +70,6 @@ export function NewTagDialog({ onCancel, onConfirm }) {
         </div>
       </div>
     </div>
+    </Overlay>
   );
 }

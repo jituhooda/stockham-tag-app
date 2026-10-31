@@ -36,7 +36,8 @@ database of its own: the browser reads and writes eMachine directly.
 | Change existing lines | Saves (update by `Id`, changed fields only) |
 | Remove a saved line | Trash → "Are you sure to delete?" → `delete from <table> where Id=…` through `model_query` |
 | Create a new tag | Add Tag → pick a job → fill in Details and save. The inserts match a save captured from the existing app: tag first, then its lines. With saving off, the requests are only logged to the console |
-| Files, Issues, Sign/Submit | **Not connected**: APIs not captured; screens explain this |
+| Files | List `tag_photos`; add (phone picker, photo editor, upload through eMachine's cloud storage → Dropbox, then `tag_photos`); delete the link |
+| Issues, Sign/Submit | **Not connected**: APIs not captured; screens explain this |
 
 `tag_equipment` saves use field names inferred from the equipment read query
 (`equipment_id`, `qty`); confirm them with one captured save.

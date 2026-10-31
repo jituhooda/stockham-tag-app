@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { IconCheck, IconClose } from './icons';
+import { Overlay } from './ui';
 
 /**
  * "+" next to an equipment line's Description: add a new item to the equipment list (name only).
@@ -31,6 +32,7 @@ export function NewEquipmentDialog({ onCancel, onCreate }) {
   };
 
   return (
+    <Overlay>
     <div className="dialog-backdrop" onPointerDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
       <form className="dialog dialog--form" role="dialog" aria-modal="true" aria-label="Add New Equipment" aria-busy={busy} onSubmit={submit}>
         <label className="dialog__row dialog__row--equipment">
@@ -47,5 +49,6 @@ export function NewEquipmentDialog({ onCancel, onCreate }) {
         </div>
       </form>
     </div>
+    </Overlay>
   );
 }

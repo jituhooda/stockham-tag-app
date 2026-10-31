@@ -2,6 +2,7 @@
  * Shared UI building blocks: buttons, status pills, the searchable select,
  * toasts, the signature pad and the Stockham logo.
  */
+import { createPortal } from 'react-dom';
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { IconCheck, IconCheckCircle, IconChevronDown, IconClose, IconSave, IconSearch } from './icons';
 
@@ -166,6 +167,16 @@ export function SearchSelect({
   );
 }
 
+/* ---------------------------------------------------------------- Overlay */
+
+/**
+ * Draws pop-ups (dialogs, menus, the photo editor and viewer) straight on <body>. Inside the page layout they
+ * would be stuck under sticky bars: the tab area is its own stacking layer, so no z-index could lift them above it.
+ */
+export function Overlay({ children }) {
+  return createPortal(children, document.body);
+}
+
 /* ---------------------------------------------------------------- Confirm */
 
 /** Centered yes/no question with ✗ and ✓ (Esc cancels). `onConfirm` may be async; the dialog waits for it. */
@@ -185,6 +196,7 @@ export function ConfirmDialog({ text, onCancel, onConfirm }) {
     }
   };
   return (
+    <Overlay>
     <div className="dialog-backdrop" onPointerDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
       <div className="dialog dialog--confirm" role="alertdialog" aria-modal="true" aria-label={text} aria-busy={busy}>
         <p className="dialog__text">{text}</p>
@@ -196,6 +208,7 @@ export function ConfirmDialog({ text, onCancel, onConfirm }) {
         </div>
       </div>
     </div>
+    </Overlay>
   );
 }
 
@@ -209,12 +222,14 @@ export function AlertDialog({ text, onClose }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
   return (
-    <div className="alert-backdrop">
-      <div className="alert" role="alertdialog" aria-modal="true" aria-label="Notice">
-        <p>{text}</p>
-        <button className="alert__ok" autoFocus onClick={onClose}>OK</button>
+    <Overlay>
+      <div className="alert-backdrop">
+        <div className="alert" role="alertdialog" aria-modal="true" aria-label="Notice">
+          <p>{text}</p>
+          <button className="alert__ok" autoFocus onClick={onClose}>OK</button>
+        </div>
       </div>
-    </div>
+    </Overlay>
   );
 }
 

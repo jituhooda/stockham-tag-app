@@ -69,7 +69,8 @@ browser ──▶ nginx (React app) ──/datamodel──▶ eMachine
 | ✅ Edit details; add and change cost lines | saved to eMachine |
 | 🧪 Create a tag (Add Tag → pick a job) | wired to the fields of a captured save; not yet run against live eMachine |
 | ✅ Remove a cost line | asks to confirm, then deletes in eMachine |
-| ⏳ Files, issues, sign/submit | **disabled** until their eMachine APIs are captured |
+| 🧪 Files: list, add (photo editor), delete | wired to the captured upload; not yet run against live eMachine |
+| ⏳ Issues, sign/submit | **disabled** until their eMachine APIs are captured |
 
 ## Repository layout
 
