@@ -23,6 +23,11 @@ export const apexConfig = {
   emachine: {
     // Empty base URL = same origin: nginx (or the Vite dev server) forwards /datamodel to eMachine.
     baseUrl: (env.VITE_EMACHINE_BASE_URL ?? '').replace(/\/$/, ''),
+    /**
+     * Reads (model_query SELECTs) go straight to eMachine; its CORS settings allow them. Saves, deletes and uploads still use baseUrl (the same-origin
+     * proxy), because they send an `eml-service` header that eMachine's CORS settings don't list, so a browser would refuse them from another origin.
+     */
+    readUrl: (env.VITE_EMACHINE_READ_URL ?? emachine.baseUrl ?? '').replace(/\/$/, ''),
     queryPath: emachine.queryPath,
     tablePath: emachine.tablePath,
     queries: emachine.queries,

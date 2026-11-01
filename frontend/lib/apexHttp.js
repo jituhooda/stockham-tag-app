@@ -116,7 +116,7 @@ export function sql(name, params = {}) {
 }
 
 export async function query(name, params, signal) {
-  const url = `${cfg.baseUrl}${cfg.queryPath}?query=${encodeURIComponent(encodeQuery(sql(name, params)))}`;
+  const url = `${cfg.readUrl}${cfg.queryPath}?query=${encodeURIComponent(encodeQuery(sql(name, params)))}`;
   const body = await send(url, { method: 'GET' }, signal);
   if (typeof body === 'string') throw new ApiError('eMachine returned an unexpected response');
   return extractRows(body);

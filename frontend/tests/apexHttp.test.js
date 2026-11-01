@@ -25,7 +25,7 @@ it('runs a query as a base64 GET with the bearer token', async () => {
   globalThis.fetch = fetchMock;
   expect(await query('materials')).toEqual([{ Id: 1 }]);
   const [url, init] = fetchMock.mock.calls[0];
-  expect(url).toBe('/datamodel/api/model_query?query=' + encodeURIComponent(encodeQuery('select * from materials_master')));
+  expect(url).toBe('https://emachine.instantar.io/datamodel/api/model_query?query=' + encodeURIComponent(encodeQuery('select * from materials_master')));
   expect(init.method).toBe('GET');
   expect(init.headers.Authorization).toBe('Bearer tok');
 });

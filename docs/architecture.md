@@ -20,9 +20,10 @@ database of its own: the browser reads and writes eMachine directly.
 - **Writes:** `POST /datamodel/api/<table>` with form fields. With `Id` the row is
   updated (only the changed fields are sent); without `Id` a row is inserted
   (cost lines also send `tag_id`).
-- **Proxy:** by default the app calls `/datamodel/...` on its own origin and
-  nginx forwards it to eMachine, so browsers never need eMachine to allow CORS.
-  Set `VITE_EMACHINE_BASE_URL` to call eMachine directly instead.
+- **Reads vs. proxy:** reads (`model_query` SELECTs) go straight to `https://emachine.instantar.io`
+  (`VITE_EMACHINE_READ_URL`; eMachine allows CORS for them). Saves, deletes and uploads call `/datamodel/...` and
+  `/cloudproviders/...` on the app's own origin and nginx / Netlify forward them, because they send an `eml-service`
+  header that eMachine's CORS settings don't list. Set `VITE_EMACHINE_BASE_URL` to send those directly as well.
 - **Auth:** each request carries the user's eMachine bearer token (pasted on the
   sign-in screen, or built in with `VITE_EMACHINE_TOKEN`).
 
