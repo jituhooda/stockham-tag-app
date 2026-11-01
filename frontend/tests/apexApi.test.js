@@ -131,5 +131,12 @@ it('asks eMachine for the next tag number of a job (the query is base64 of the a
   expect(await apexApi.tags.nextNumber('A2155')).toBe('A2155-4');
   const url = new URL(globalThis.fetch.mock.calls[0][0], 'http://x');
   const sql = atob(url.searchParams.get('query'));
-  expect(sql).toBe("SELECT CONCAT( 'A2155', '-', COALESCE( MAX(CAST(SUBSTRING_INDEX(tag_number, '-', -1) AS UNSIGNED)), 0 ) + 1 ) AS next_tag_number FROM tags WHERE tag_number LIKE 'A2155-%'");
+  expect(sql).toBe("SELECT CONCAT('A2155-', COALESCE(MAX(CAST(SUBSTRING_INDEX(tag_number, '-', -1) AS UNSIGNED)), 0) + 1) AS next_tag_number FROM tags WHERE JobNo = 'A2155' AND tag_number REGEXP '^A2155-[0-9]+$'");
+});
+
+it('escapes quotes and regex characters in the job number', async () => {
+  globalThis.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { records: [] } })));
+  await apexApi.tags.nextNumber("A.1'");
+  const sql = atob(new URL(globalThis.fetch.mock.calls[0][0], 'http://x').searchParams.get('query'));
+  expect(sql).toContain(String.raw`JobNo = 'A.1''' AND tag_number REGEXP '^A\\.1''-[0-9]+$'`);
 });

@@ -421,7 +421,11 @@ export const apexApi = {
     nextNumber: async (jobNo, signal) => {
       const job = String(jobNo || '').trim();
       if (!job) return '';
-      const [r] = await query('nextTagNumber', { jobNo: sqlString(job), jobPattern: sqlString(`${job}-%`) }, signal);
+      const [r] = await query('nextTagNumber', {
+        jobNo: sqlString(job),
+        jobPrefix: sqlString(`${job}-`),
+        jobPattern: sqlString(`^${job.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-[0-9]+$`),
+      }, signal);
       return r ? text(r, 'next_tag_number') : '';
     },
 
