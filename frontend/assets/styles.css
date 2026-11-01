@@ -64,6 +64,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 }
 
 .placeholder { height: 100%; display: grid; place-content: center; justify-items: center; gap: 12px; color: var(--muted); padding: 24px; text-align: center; }
+.logo-img { display: block; height: auto; max-width: 100%; }
 .placeholder__logo { width: 180px; opacity: 0.55; }
 
 /* ---------- Buttons & inputs ---------- */
@@ -126,9 +127,11 @@ input[type='number']::-webkit-inner-spin-button { opacity: 0.4; }
 .list-page { height: 100%; display: flex; flex-direction: column; background: var(--bg); }
 .list-head { background: var(--slate); padding: 12px 16px 14px; padding-top: max(12px, env(safe-area-inset-top)); border-radius: 0 0 var(--radius-lg) var(--radius-lg); box-shadow: 0 4px 14px rgba(20, 28, 45, 0.1); position: relative; z-index: 2; }
 .list-head__top { display: flex; align-items: center; gap: 12px; }
-.list-head__logo { width: 92px; flex: none; }
+.list-head__logo { width: 72px; flex: none; }
 .list-head__title { flex: 1; min-width: 0; }
-.list-head__title h1 { margin: 0; font: 700 24px/1.1 Georgia, 'Times New Roman', serif; letter-spacing: 0.02em; color: #1b1f27; }
+/* The title shrinks with the header's width (logo and menu button take about 136px of it) so it stays on one line. */
+.list-head { container-type: inline-size; }
+.list-head__title h1 { margin: 0; font: 700 clamp(12px, calc((100cqw - 136px) / 12), 22px)/1.15 Georgia, 'Times New Roman', serif; letter-spacing: 0.02em; color: #1b1f27; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .list-head__title span { color: var(--red); font-size: 13px; }
 .list-head__filters { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin: 14px 0 12px; }
 .pill-input { width: 100%; height: 42px; border: 0; border-radius: 12px; background: #fff; padding: 0 12px; font-size: 17px; color: var(--ink-2); text-align: center; }
@@ -337,7 +340,7 @@ input[type='number']::-webkit-inner-spin-button { opacity: 0.4; }
   .action-bar .btn { min-height: 38px; }
   .list-head { padding-top: 8px; }
   .list-head__filters { margin: 8px 0; }
-  .list-head__logo { width: 72px; }
+  .list-head__logo { width: 60px; }
 }
 
 /* Toast */

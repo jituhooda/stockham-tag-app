@@ -1,8 +1,8 @@
 {
   "$schema": "./config.schema.json#/definitions/branding",
   "companyName": "Stockham Construction",
-  "appTitle": "Tags-V5",
-  "appSubtitle": "Change Order",
+  "appTitle": "Change Order Tags",
+  "appSubtitle": "",
   "colors": {
     "primary": "#24304f",
     "header": "#a7b0ba",

@@ -37,8 +37,8 @@ export function TagListPage() {
         <div className="list-head__top">
           <Logo className="list-head__logo" />
           <div className="list-head__title">
-            <h1>{config.branding.appTitle || 'Tags'}</h1>
-            <span>{config.branding.appSubtitle || 'Change Order'}</span>
+            <h1>{config.branding.appTitle || 'Change Order Tags'}</h1>
+            {config.branding.appSubtitle && <span>{config.branding.appSubtitle}</span>}
           </div>
           <button className="icon-btn" aria-label="Open menu" onClick={() => setMenu(true)}>
             <IconMenu size={28} />

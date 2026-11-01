@@ -1,7 +1,7 @@
 /* Stockham Tags service worker: lets the app install and open offline (app shell only).
  * eMachine data (/datamodel) is never cached; it is live data and carries the token. */
-const CACHE = 'stockham-shell-v2';
-const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
+const CACHE = 'stockham-shell-v3';
+const SHELL = ['/', '/manifest.webmanifest', '/favicon.png', '/stockham-logo.png', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

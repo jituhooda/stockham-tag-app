@@ -18,11 +18,12 @@ const Label = ({ x, y, children, size = 13, fill = '#1f2328', anchor = 'middle',
 );
 
 function AppIcon({ x, y, size = 44 }) {
+  const id = `app-icon-${x}-${y}`;
   return (
     <g>
-      <rect x={x} y={y} width={size} height={size} rx={size * 0.22} fill={NAVY} />
-      <text x={x + size / 2} y={y + size * 0.66} fontSize={size * 0.52} fontWeight="700" fill="#fff" textAnchor="middle" fontFamily="Georgia, serif">S</text>
-      <rect x={x + size * 0.2} y={y + size * 0.78} width={size * 0.6} height={size * 0.06} fill="#c0282d" />
+      <clipPath id={id}><rect x={x} y={y} width={size} height={size} rx={size * 0.22} /></clipPath>
+      <image href="/icon-192.png" x={x} y={y} width={size} height={size} clipPath={`url(#${id})`} />
+      <rect x={x} y={y} width={size} height={size} rx={size * 0.22} fill="none" stroke="#d3d7dd" strokeWidth="1" />
     </g>
   );
 }
