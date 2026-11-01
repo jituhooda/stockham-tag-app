@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { IconCheckCircle, IconFile } from './icons';
 import { Overlay } from './ui';
 
-/** Shown after Submit succeeds: the link to the signed PDF the service made. */
-export function SignedDocDialog({ links, onClose }) {
+/** Shown after Submit succeeds: the link to the signed PDF the service made, or (sentTo) who the tag was sent to for signature. */
+export function SignedDocDialog({ links, sentTo, onClose }) {
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
@@ -12,10 +12,10 @@ export function SignedDocDialog({ links, onClose }) {
   return (
     <Overlay>
       <div className="alert-backdrop">
-        <div className="alert signed-doc" role="alertdialog" aria-modal="true" aria-label="Submitted">
+        <div className="alert signed-doc" role="alertdialog" aria-modal="true" aria-label={sentTo ? 'Sent for signature' : 'Submitted'}>
           <IconCheckCircle size={44} className="signed-doc__ok" />
-          <p><strong>Submitted</strong></p>
-          <SignedDocLinks links={links} />
+          <p><strong>{sentTo ? 'Sent for signature' : 'Submitted'}</strong></p>
+          {sentTo ? <p className="muted small">{sentTo}</p> : <SignedDocLinks links={links} />}
           <button className="alert__ok" autoFocus onClick={onClose}>OK</button>
         </div>
       </div>

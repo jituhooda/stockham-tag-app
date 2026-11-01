@@ -126,6 +126,10 @@
               "type": "string",
               "format": "uri"
             },
+            "sendUrl": {
+              "type": "string",
+              "format": "uri"
+            },
             "timeoutSeconds": {
               "type": "number",
               "exclusiveMinimum": 0

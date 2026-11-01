@@ -28,15 +28,20 @@ export function ActionBar({ children }) {
   return <div className="action-bar">{children}</div>;
 }
 
+/** A small spinning ring for a button that is waiting on eMachine. It keeps turning under "reduce motion" (it is the only sign of progress). */
+const ButtonSpinner = () => <span className="btn__spinner" aria-hidden="true" />;
+
 export const SaveButton = ({ onClick, disabled, busy }) => (
-  <button className="btn btn--dark" onClick={onClick} disabled={disabled || busy}>
-    <IconSave size={20} /> {busy ? 'Saving…' : 'Save'}
+  <button className="btn btn--dark" onClick={onClick} disabled={disabled || busy} aria-busy={busy || undefined}>
+    {busy ? <ButtonSpinner /> : <IconSave size={20} />} {busy ? 'Saving…' : 'Save'}
   </button>
 );
 
-export const SubmitButton = ({ onClick, disabled, busy, label = 'Submit' }) => (
-  <button className="btn btn--dark btn--right" onClick={onClick} disabled={disabled || busy}>
-    <IconCheckCircle size={22} /> {busy ? 'Working…' : label}
+/** `progress` is what the work is doing right now ("Sending…"), shown while busy. */
+export const SubmitButton = ({ onClick, disabled, busy, progress, label = 'Submit' }) => (
+  <button className={cx('btn btn--dark btn--right', busy && 'is-busy')} onClick={onClick} disabled={disabled || busy} aria-busy={busy || undefined}>
+    {busy ? <ButtonSpinner /> : <IconCheckCircle size={22} />}
+    <span aria-live="polite">{busy ? progress || 'Working…' : label}</span>
   </button>
 );
 

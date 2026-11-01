@@ -62,8 +62,9 @@
     "image": { "maxPixels": 2560, "quality": 0.88 }
   },
   "submit": {
-    "comment": "Submit (Sign tab) saves the tag, then sends one JSON document to eMachine's signed-document service, which does everything else (the PDF, the Autodesk Cost change order, the emails). The request carries only the user's email in the instantarusername header.",
+    "comment": "Submit (Sign tab) saves the tag, then sends one JSON document to eMachine's signed-document service (url; sendUrl for \"Send for signature\", which carries unsign_reason and no signature image), which does everything else (the PDF, the Autodesk Cost change order, the emails). The request carries only the user's email in the instantarusername header.",
     "url": "https://stockham.emachine.ai/stockham/create-stockham-signed-doc",
+    "sendUrl": "https://stockham.emachine.ai/stockham/create-stockham-request-autodesk",
     "timeoutSeconds": 180
   },
   "forma": {

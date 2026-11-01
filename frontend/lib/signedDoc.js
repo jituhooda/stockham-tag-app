@@ -14,11 +14,13 @@ const rows = (list, fields) => (list || []).map((r) => Object.fromEntries(fields
 
 /**
  * Build the JSON body. Field names, order and string-valued numbers follow the captured request.
+ * "Send for signature" sends the same document without the signature image and with `unsign_reason` (why the approver isn't signing now).
  * `data` is what Submit gathered: { job, labor, materials, equipment, expenses, photos } (database rows)
  * plus `issues` (labels like "5 : Room has been dropped").
  */
 export function buildSignedDocBody({ tag, signature, user, data }) {
   const job = data.job || {};
+  const send = signature.mode === 'send';
   return {
     description: str(tag.description),
     customer_name: str(tag.customerName || job.CustomerName),
@@ -31,8 +33,9 @@ export function buildSignedDocBody({ tag, signature, user, data }) {
     tag_num: str(tag.tagNumber),
     pm_email: str(tag.pmEmail || job.PMEmail),
     originator_email: str(user.email),
-    signature_image_b64: pngBase64(signature.image),
+    ...(send ? {} : { signature_image_b64: pngBase64(signature.image) }),
     signer_name: str(signature.approver),
+    ...(send ? { unsign_reason: str(signature.reason) } : {}),
     pm_name: str(job.PMName),
     issue_table: (data.issues || []).map(str),
     labor_table: rows(data.labor, ['EmployeeName', 'TradeName', 'ST', 'OT', 'DT', 'POT', 'PDT']),
@@ -79,26 +82,33 @@ export function recallSignedDoc(tagId) {
 /** What must be there before the service is called (it would produce a document with holes otherwise). */
 export function signedDocProblems(body) {
   const p = [];
-  if (!body.signature_image_b64) p.push('The approver needs to sign above');
+  if ('unsign_reason' in body) {
+    if (!body.unsign_reason) p.push('Choose a reason for sending the tag for signature');
+    if (!body.customer_email) p.push('Enter a valid email to send the tag to');
+  } else if (!body.signature_image_b64) p.push('The approver needs to sign above');
   if (!body.signer_name) p.push('Choose an approver');
   if (!body.tag_num) p.push('Enter a tag number on the Details tab');
   if (!body.job_num) p.push('Select a job on the Details tab');
   return p;
 }
 
-/** Send it. Resolves to the service's reply (parsed JSON, or text). Refuses to run while saving is turned off. */
+/**
+ * Send it. Resolves to the service's reply (parsed JSON, or text). Refuses to run while saving is turned off.
+ * A body with `unsign_reason` goes to the send-for-signature endpoint, the others to the signed-document one.
+ */
 export async function postSignedDoc(body, userEmail, signal) {
   const cfg = apexConfig.submit;
+  const url = 'unsign_reason' in body ? cfg.sendUrl : cfg.url;
   if (!apexConfig.emachine.writesEnabled) {
-    console.info('[read-only] signed-document request that would have been sent:', cfg.url, { ...body, signature_image_b64: `(${body.signature_image_b64.length} chars)` });
-    throw new WritesDisabledError([{ method: 'POST', url: cfg.url, table: 'signed-document' }]);
+    console.info('[read-only] signed-document request that would have been sent:', url, { ...body, ...('signature_image_b64' in body ? { signature_image_b64: `(${body.signature_image_b64.length} chars)` } : {}) });
+    throw new WritesDisabledError([{ method: 'POST', url, table: 'signed-document' }]);
   }
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(new DOMException('timeout', 'TimeoutError')), cfg.timeoutMs);
   signal?.addEventListener('abort', () => ctrl.abort(signal.reason), { once: true });
   let res;
   try {
-    res = await fetch(cfg.url, {
+    res = await fetch(url, {
       method: 'POST',
       headers: { Accept: '*/*', 'Content-Type': 'application/json', instantarusername: str(userEmail) },
       body: JSON.stringify(body),

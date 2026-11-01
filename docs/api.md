@@ -145,7 +145,7 @@ The Issues tab links Autodesk Forma issues to the tag.
 - **"+" (inferred, not captured):** "Add New Approver" (first name, last name, email) sends `POST /datamodel/api/customercontact` with
   `FirstName`, `LastName`, `Email`, `CustomerID` (the table's four columns; header `eml-service: True`), reloads the contacts and
   selects the new one. An email that already exists is selected instead of added again.
-- **Submit, sign in person (captured):** see below. **Send for signature** is still disabled: its request hasn't been captured.
+- **Submit, sign in person (captured):** see below. **Send for signature** is described under Submit.
 
 ## Submit
 
@@ -169,6 +169,14 @@ list refresh). What the app does, in order:
    it once its `Expires` time has passed. Only http(s) links are used.
 6. Re-reads the tag. If it is still a draft (the service didn't change it) the app sets `Submitted`; if the service already did,
    the app writes nothing. The tag then opens read-only.
+
+### Send for signature
+
+Same steps, but with the "Send for signature" choice the document is posted to
+`https://stockham.emachine.ai/stockham/create-stockham-request-autodesk` (`submit.sendUrl`). The body is the same as above except that
+`signature_image_b64` is left out and `unsign_reason` (`Not Onsite`, `Refused to Sign` or `Other`; the service handles it) comes after
+`signer_name`. `customer_email` is the approver email typed on the Sign tab. The app then sets the tag to `Submitted` as above and shows
+a "Sent for signature" popup with the email; the service's reply isn't used.
 
 Assumptions to confirm with a real run: `pm_email` is the job's PM email (the sample used the originator's), `job_city_zip` is the
 job's City, and the service (not the app) updates the tag's status/signature columns. Tested only against fakes, never live.

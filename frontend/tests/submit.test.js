@@ -143,3 +143,23 @@ it('remembers the document for the tag in this session, until its link expires',
   expect(recallSignedDoc('2')).toBeNull();
   expect(recallSignedDoc('3')).toBeNull();
 });
+
+it('builds the send-for-signature body: no signature image, unsign_reason after signer_name', () => {
+  const send = { ...signature, image: '', mode: 'send', reason: 'Not Onsite' };
+  const body = buildSignedDocBody({ tag, signature: send, user, data });
+  const keys = Object.keys(body);
+  expect(keys).not.toContain('signature_image_b64');
+  expect(keys[keys.indexOf('signer_name') + 1]).toBe('unsign_reason');
+  expect(body.unsign_reason).toBe('Not Onsite');
+  expect(signedDocProblems(body)).toEqual([]);
+  expect(signedDocProblems({ ...body, unsign_reason: '' })).toHaveLength(1);
+});
+
+it('posts a send-for-signature body to the send endpoint', async () => {
+  const body = buildSignedDocBody({ tag, signature: { ...signature, image: '', mode: 'send', reason: 'Other' }, user, data });
+  globalThis.fetch = vi.fn().mockResolvedValue(json({ ok: true }));
+  await postSignedDoc(body, 'sean@stockhamconstruction.com');
+  expect(globalThis.fetch.mock.calls[0][0]).toBe(apexConfig.submit.sendUrl);
+  expect(globalThis.fetch.mock.calls[0][0]).toMatch(/create-stockham-request-autodesk$/);
+  expect(JSON.parse(globalThis.fetch.mock.calls[0][1].body).unsign_reason).toBe('Other');
+});

@@ -37,7 +37,7 @@ export const apexConfig = {
     writesEnabled: flag(env.VITE_EMACHINE_WRITES, false),
   },
   /** Submit: one JSON document to the signed-document service. */
-  submit: { url: submit.url, timeoutMs: (submit.timeoutSeconds || 180) * 1000 },
+  submit: { url: submit.url, sendUrl: submit.sendUrl, timeoutMs: (submit.timeoutSeconds || 180) * 1000 },
   /** File uploads (photos, audio, documents) through eMachine's cloud-storage service. */
   uploads: {
     url: uploads.url,

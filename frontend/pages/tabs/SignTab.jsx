@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { IconEraser, IconPlus } from '../../components/icons';
 import { NewApproverDialog } from '../../components/NewApproverDialog';
 import { SignedDocDialog, SignedDocLinks } from '../../components/SignedDocDialog';
-import { NotConnected } from '../../components/NotConnected';
 import { ActionBar, SearchSelect, SignaturePad, SubmitButton, useToast } from '../../components/ui';
 import { useMasterData } from '../../hooks/useMasterData';
 import { apexApi } from '../../lib/apexApi';
@@ -29,7 +28,9 @@ export function SignTab({ tag, save, goTo, refresh, readOnly, busy, editor, foll
   const [adding, setAdding] = useState(false);
   const [onFile, setOnFile] = useState([]); // signatures already saved on this tag
   const [submitting, setSubmitting] = useState(false);
+  const [stage, setStage] = useState(''); // what Submit is doing, for the button
   const [doneLinks, setDoneLinks] = useState(null); // the signed document, once Submit succeeded
+  const [sentTo, setSentTo] = useState(''); // the approver's email, once the tag was sent for signature
   // A new tag changes id on its first save, which remounts this tab: a just-made document still opens the dialog.
   const [showDone, setShowDone] = useState(() => Date.now() - (recallSignedDoc(tag.id)?.at || 0) < 15000);
   const signedDoc = useMemo(() => doneLinks || recallSignedDoc(tag.id), [doneLinks, tag.id]);
@@ -107,6 +108,7 @@ export function SignTab({ tag, save, goTo, refresh, readOnly, busy, editor, foll
       return;
     }
     setSubmitting(true);
+    setStage('Saving…');
     try {
       // Save first, so the document is made from what is stored. A new tag gets its id here.
       let saved = !isNew && !editor.dirty ? editor.form : null;
@@ -115,6 +117,7 @@ export function SignTab({ tag, save, goTo, refresh, readOnly, busy, editor, foll
         if (!saved) return;
       }
       const current = { ...saved, signature: sig };
+      setStage('Preparing…');
       const data = await apexApi.tags.submitData(current);
       const body = buildSignedDocBody({ tag: current, signature: sig, user, data });
       const more = signedDocProblems(body);
@@ -124,8 +127,10 @@ export function SignTab({ tag, save, goTo, refresh, readOnly, busy, editor, foll
         if (tab) goTo(tab);
         return;
       }
+      setStage(sig.mode === 'send' ? 'Sending…' : 'Creating document…');
       const links = signedDocLinks(await postSignedDoc(body, user.email));
-      rememberSignedDoc(current.id, links);
+      if (links.pdf) rememberSignedDoc(current.id, links);
+      setStage('Finishing…');
       let done;
       try {
         done = await apexApi.tags.finishSubmit(current.id);
@@ -136,13 +141,15 @@ export function SignTab({ tag, save, goTo, refresh, readOnly, busy, editor, foll
       }
       editor.accept(done);
       refresh?.();
-      setDoneLinks(links);
+      if (sig.mode === 'send') setSentTo(sig.email);
+      else setDoneLinks(links);
       setShowDone(true);
       follow(done);
     } catch (e) {
       toast(e instanceof WritesDisabledError ? 'Saving to eMachine is turned off, so nothing was submitted.' : e.message, 'error');
     } finally {
       setSubmitting(false);
+      setStage('');
     }
   };
 
@@ -229,19 +236,14 @@ export function SignTab({ tag, save, goTo, refresh, readOnly, busy, editor, foll
           </>
         )}
 
-        {sendMode && !readOnly && (
-          <NotConnected what="Sending a tag for signature">
-            Submit works for “Sign in person”. The reason and approver email are collected here, but sending the tag
-            to the approver to sign later needs its own request, which hasn’t been connected yet.
-          </NotConnected>
-        )}
       </div>
       {!readOnly && (
         <ActionBar>
-          <SubmitButton onClick={submit} busy={busy || submitting} disabled={!submitConnected || sendMode} />
+          <SubmitButton onClick={submit} busy={busy || submitting} progress={submitting ? stage : ''} disabled={!submitConnected} />
         </ActionBar>
       )}
-      {showDone && signedDoc && <SignedDocDialog links={signedDoc} onClose={() => setShowDone(false)} />}
+      {showDone && sentTo && <SignedDocDialog sentTo={sentTo} onClose={() => setShowDone(false)} />}
+      {showDone && !sentTo && signedDoc && <SignedDocDialog links={signedDoc} onClose={() => setShowDone(false)} />}
       {adding && <NewApproverDialog customerName={customer} onCancel={() => setAdding(false)} onCreate={addApprover} />}
     </>
   );
