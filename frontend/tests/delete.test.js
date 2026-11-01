@@ -20,7 +20,6 @@ it('sends the same delete statement the existing app sends (model_query GET)', a
   await apexApi.tags.deleteLine('labor', '10000106');
   const [url, init] = fetchMock.mock.calls[0];
   expect(init.method).toBe('GET');
-  expect(init.headers['eml-service']).toBe('True');
   expect(decode(url)).toBe("delete from tag_labor where Id='10000106'");
   // the captured request, byte for byte (base64 without padding)
   expect(url.split('query=')[1]).toBe(encodeQuery("delete from tag_labor where Id='10000106'").replace(/=+$/, ''));
@@ -39,7 +38,7 @@ it.each(Object.entries(CAPTURED))('%s delete matches the captured request exactl
   const fetchMock = vi.fn().mockResolvedValue(new Response('{}'));
   globalThis.fetch = fetchMock;
   await apexApi.tags.deleteLine(kind, statement.match(/'(\d+)'/)[1]);
-  expect(fetchMock.mock.calls[0][0]).toBe(`/datamodel/api/model_query?query=${query}`);
+  expect(fetchMock.mock.calls[0][0]).toBe(`https://emachine.instantar.io/datamodel/api/model_query?query=${query}`);
 });
 
 it('maps each line type to its own table', async () => {

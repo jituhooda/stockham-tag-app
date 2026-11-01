@@ -13,9 +13,8 @@ it('adds a material with the same request the existing app sends (description + 
   globalThis.fetch = fetchMock;
   const id = await apexApi.master.createMaterial({ description: 'Test-Mat', costCodeId: '10000337' });
   const [url, init] = fetchMock.mock.calls[0];
-  expect(url).toBe('/datamodel/api/materials_master');
+  expect(url).toBe('https://emachine.instantar.io/datamodel/api/materials_master');
   expect(init.method).toBe('POST');
-  expect(init.headers['eml-service']).toBe('True');
   expect(init.body).toBe('description=Test-Mat&CostCodeID=10000337');
   expect(id).toBe(10000060);
 });

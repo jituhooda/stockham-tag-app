@@ -51,8 +51,8 @@
   },
   "uploads": {
     "comment": "Files are uploaded to eMachine's cloud-storage service (it stores them in Dropbox and returns the file link); the link is then saved on the tag in tag_photos. {appId} and {user} in pathTemplate are filled in: appId from this file, user = the signed-in user's email. CONFIRM appId (captured from the existing app).",
-    "url": "/cloudproviders/app/cloud_storage/upload",
-    "deleteUrl": "/cloudproviders/app/cloud_storage/delete",
+    "url": "https://emachine.instantar.io/cloudproviders/app/cloud_storage/upload",
+    "deleteUrl": "https://emachine.instantar.io/cloudproviders/app/cloud_storage/delete",
     "providerName": "SupportEmachine-Dropbox",
     "customerName": "Basic",
     "pathTemplate": "/Stockham/prod/{appId}/{user}/Misc",

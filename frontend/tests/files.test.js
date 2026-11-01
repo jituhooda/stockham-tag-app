@@ -24,7 +24,7 @@ it('uploads like the existing app, then saves the returned link on the tag', asy
 
   // 1) the multipart upload: same fields, same order, the file last
   const [up, save] = calls;
-  expect(up.url).toBe('/cloudproviders/app/cloud_storage/upload');
+  expect(up.url).toBe('https://emachine.instantar.io/cloudproviders/app/cloud_storage/upload');
   expect(up.init.method).toBe('POST');
   expect(up.init.headers['Content-Type']).toBeUndefined(); // the browser sets the multipart boundary
   const entries = [...up.init.body.entries()];
@@ -37,7 +37,7 @@ it('uploads like the existing app, then saves the returned link on the tag', asy
   expect(entries[3][1].name).toBe('20261030_161230.jpg');
 
   // 2) the tag_photos insert, byte for byte like the capture
-  expect(save.url).toBe('/datamodel/api/tag_photos');
+  expect(save.url).toBe('https://emachine.instantar.io/datamodel/api/tag_photos');
   expect(save.init.body).toBe('tag_id=10000099&photo_url=https%3A%2F%2Fdl.dropboxusercontent.com%2Fscl%2Ffi%2F2zn9a8i43qiqhwfrwow1u%2F20261030_161230.jpg%3Frlkey%3Dovngax975hnxckxycdljkyhgp%26dl%3D1&description=20261030_161230.jpg');
 });
 
@@ -95,7 +95,7 @@ it('lists a tag\'s files and classifies them by name', async () => {
 it('deletes a file with exactly the captured request (query param byte for byte)', async () => {
   globalThis.fetch = vi.fn().mockResolvedValue(new Response('{}'));
   await apexApi.tags.deletePhoto('10000076');
-  expect(globalThis.fetch.mock.calls[0][0]).toBe('/datamodel/api/model_query?query=ZGVsZXRlIGZyb20gdGFnX3Bob3RvcyB3aGVyZSBJZD0nMTAwMDAwNzYn');
+  expect(globalThis.fetch.mock.calls[0][0]).toBe('https://emachine.instantar.io/datamodel/api/model_query?query=ZGVsZXRlIGZyb20gdGFnX3Bob3RvcyB3aGVyZSBJZD0nMTAwMDAwNzYn');
 });
 
 it('deletes a file with the same delete statement style as cost lines (tag_photos by Id)', async () => {
@@ -112,7 +112,7 @@ it('deletes the tag_photos row (captured request), then the Dropbox copy at the 
   const [rowUrl] = globalThis.fetch.mock.calls[0];
   expect(rowUrl.split('query=')[1]).toBe('ZGVsZXRlIGZyb20gdGFnX3Bob3RvcyB3aGVyZSBJZD0nMTAwMDAwNzYn');
   const [url, init] = globalThis.fetch.mock.calls[1];
-  expect(url).toBe('/cloudproviders/app/cloud_storage/delete');
+  expect(url).toBe('https://emachine.instantar.io/cloudproviders/app/cloud_storage/delete');
   expect(init.method).toBe('POST');
   const body = new URLSearchParams(init.body);
   expect(body.get('provider_name')).toBe('SupportEmachine-Dropbox');

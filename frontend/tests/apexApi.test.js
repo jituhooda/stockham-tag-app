@@ -27,15 +27,15 @@ it('updates only changed fields, with Id', () => {
   const form = { ...saved, description: 'add door and frame', expenses: [{ ...expense, amount: '40.00' }] };
   const reqs = planSave(form, saved);
   expect(reqs.map((r) => [r.url, r.body])).toEqual([
-    ['/datamodel/api/tags', 'Id=10000113&description=add+door+and+frame'],
-    ['/datamodel/api/tag_other_expenses', 'Id=10000135&qty=40.00'],
+    ['https://emachine.instantar.io/datamodel/api/tags', 'Id=10000113&description=add+door+and+frame'],
+    ['https://emachine.instantar.io/datamodel/api/tag_other_expenses', 'Id=10000135&qty=40.00'],
   ]);
 });
 
 it('inserts new lines with tag_id and all fields (matches the captured labor insert)', () => {
   const added = { ...emptyLabor(), employeeId: '10004991', employeeName: 'Gabriel A Atencio', tradeId: '10000338' };
   const [req] = planSave({ ...saved, labor: [labor, added] }, saved);
-  expect(req.url).toBe('/datamodel/api/tag_labor');
+  expect(req.url).toBe('https://emachine.instantar.io/datamodel/api/tag_labor');
   expect(Object.fromEntries(new URLSearchParams(req.body))).toEqual({
     tag_id: '10000113', employee_id: '10004991', employee_name: 'Gabriel A Atencio', trade_id: '10000338',
     regularhours: '0.00', overtime: '0.00', doubletime: '0.00',
@@ -88,7 +88,7 @@ it('saves a new tag with exactly the fields the existing app sends', () => {
   const body = (r) => Object.fromEntries(new URLSearchParams(r.body));
 
   const tagReq = newTagRequest(tag);
-  expect(tagReq.url).toBe('/datamodel/api/tags');
+  expect(tagReq.url).toBe('https://emachine.instantar.io/datamodel/api/tags');
   expect(body(tagReq)).toEqual({
     CreatedById: 'Sean Hubert', tag_number: '', description: '9999', status: 'Draft', tag_date: '2026-05-29',
     JobName: '1 Embarcadero Ste 3820 25-1076', CustomerID: '1148', PMEmail: 'cameron@stockhamconstruction.com',

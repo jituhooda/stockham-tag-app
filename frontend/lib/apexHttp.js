@@ -116,7 +116,7 @@ export function sql(name, params = {}) {
 }
 
 export async function query(name, params, signal) {
-  const url = `${cfg.readUrl}${cfg.queryPath}?query=${encodeURIComponent(encodeQuery(sql(name, params)))}`;
+  const url = `${cfg.baseUrl}${cfg.queryPath}?query=${encodeURIComponent(encodeQuery(sql(name, params)))}`;
   const body = await send(url, { method: 'GET' }, signal);
   if (typeof body === 'string') throw new ApiError('eMachine returned an unexpected response');
   return extractRows(body);
@@ -145,7 +145,7 @@ export async function runWrites(requests) {
   for (const r of requests) {
     results.push(await send(r.url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'eml-service': 'True' },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: r.body,
     }));
   }
@@ -164,7 +164,7 @@ export async function runDelete(table, id) {
     console.info('[read-only] eMachine delete that would have been sent:', url, statement);
     throw new WritesDisabledError([{ method: 'GET', url, table, statement }]);
   }
-  await send(url, { method: 'GET', headers: { 'eml-service': 'True' } });
+  await send(url, { method: 'GET' });
 }
 
 /**

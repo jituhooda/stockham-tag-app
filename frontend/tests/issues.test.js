@@ -111,7 +111,7 @@ it('saving sends one tag_issues insert per newly picked issue, and nothing for u
   const picked = { ...emptyIssue(), issueId: 'new-guid', label: '15 : y' };
   const reqs = planSave({ ...saved, issues: [...saved.issues, picked] }, saved);
   expect(reqs).toHaveLength(1);
-  expect(reqs[0].url).toBe('/datamodel/api/tag_issues');
+  expect(reqs[0].url).toBe('https://emachine.instantar.io/datamodel/api/tag_issues');
   expect(Object.fromEntries(new URLSearchParams(reqs[0].body))).toEqual({ tag_id: '10000099', issue_id: 'new-guid' });
   expect(planSave(saved, saved)).toEqual([]);
 });

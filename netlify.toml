@@ -1,4 +1,4 @@
-# Netlify equivalent of infrastructure/nginx/nginx.conf.
+# Static hosting only: the browser calls eMachine (emachine.instantar.io) and stockham.emachine.ai directly; nothing is proxied through this site.
 # Set VITE_EMACHINE_WRITES=true (and any other VITE_* values) in Site settings > Environment variables.
 [build]
   command = "cd frontend && npm ci && npm run build"
@@ -6,19 +6,6 @@
 
 [build.environment]
   NODE_VERSION = "22"
-
-# eMachine reads/writes and file uploads: same-origin paths forwarded to eMachine (no CORS needed).
-[[redirects]]
-  from = "/datamodel/*"
-  to = "https://emachine.instantar.io/datamodel/:splat"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/cloudproviders/*"
-  to = "https://emachine.instantar.io/cloudproviders/:splat"
-  status = 200
-  force = true
 
 # Client-side routes (/tags/12/cost) fall back to the app.
 [[redirects]]

@@ -27,6 +27,6 @@ curl -fsS --max-time 5 "$url/healthz" -o /dev/null 2>/dev/null && ok "nginx heal
 if [[ $emachine == 1 ]]; then
   [[ -n "${EMACHINE_TOKEN:-}" ]] || die "Set EMACHINE_TOKEN for --emachine"
   code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 -H "authorization: Bearer $EMACHINE_TOKEN" \
-    "$url/datamodel/api/model_query?query=$(printf 'SELECT 1' | base64)")
-  [[ "$code" == 200 ]] && ok "eMachine reachable through the proxy (read-only check)" || die "eMachine check returned HTTP $code"
+    "https://emachine.instantar.io/datamodel/api/model_query?query=$(printf 'SELECT 1' | base64)")
+  [[ "$code" == 200 ]] && ok "eMachine reachable (read-only check)" || die "eMachine check returned HTTP $code"
 fi

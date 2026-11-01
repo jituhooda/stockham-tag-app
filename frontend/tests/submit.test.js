@@ -112,7 +112,7 @@ it('after the document: leaves the status alone if eMachine already changed it, 
   await apexApi.tags.finishSubmit('10000099');
   const posts = f2.mock.calls.filter(([, i]) => i?.method === 'POST');
   expect(posts).toHaveLength(1);
-  expect(posts[0][0]).toBe('/datamodel/api/tags');
+  expect(posts[0][0]).toBe('https://emachine.instantar.io/datamodel/api/tags');
   expect(Object.fromEntries(new URLSearchParams(posts[0][1].body))).toEqual({ Id: '10000099', status: 'Submitted' });
 });
 

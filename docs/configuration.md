@@ -18,8 +18,7 @@ Only flip a feature switch once its eMachine call is implemented and tested.
 | Variable | Default | |
 | --- | --- | --- |
 | `VITE_EMACHINE_WRITES` | `false` | **Saving to eMachine.** Off = Save logs requests and sends nothing |
-| `VITE_EMACHINE_BASE_URL` | empty | empty = same origin via the `/datamodel` proxy; or a full URL to call eMachine directly (needs CORS) |
-| `VITE_EMACHINE_READ_URL` | `https://emachine.instantar.io` | where reads (`model_query` SELECTs) go: directly to eMachine by default. Saves, deletes and uploads use `VITE_EMACHINE_BASE_URL` (the proxy) because their `eml-service` header isn't allowed by eMachine's CORS settings |
+| `VITE_EMACHINE_BASE_URL` | `emachine.baseUrl` (`https://emachine.instantar.io`) | where the browser calls eMachine. It is called directly and is fixed; nothing is proxied through the app's own host |
 | `VITE_EMACHINE_TOKEN` | empty | built-in token for every user (visible to anyone who loads the site); empty = users paste their own |
 | `VITE_KEYCLOAK_ISSUER` / `VITE_KEYCLOAK_CLIENT_ID` | from `auth` in `config/integrations.config.json` | Keycloak realm URL and client used by **Sign in** (see below) |
 | `EMACHINE_PROXY_TARGET` | `https://emachine.instantar.io` | where `npm run dev` / `preview` forward `/datamodel` |

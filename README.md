@@ -52,9 +52,11 @@ uses your public address.
 ## How it works
 
 ```
-browser ──▶ nginx (React app) ──/datamodel──▶ eMachine
-                                  GET  model_query?query=<base64 SQL>   (reads)
-                                  POST /datamodel/api/<table>           (saves)
+browser ──▶ static host (React app)
+   │
+   └──▶ https://emachine.instantar.io     (called directly from the browser)
+          GET  /datamodel/api/model_query?query=<base64 SQL>   (reads)
+          POST /datamodel/api/<table>                          (saves)
 ```
 
 - All read queries are in `config/integrations.config.json`.
@@ -83,7 +85,7 @@ browser ──▶ nginx (React app) ──/datamodel──▶ eMachine
 | `config/` | App, branding, feature switches, eMachine queries and write fields (+ schema) |
 | `api/` | The eMachine endpoints the app uses (OpenAPI) |
 | `tests/e2e/` | Browser tests against a mock eMachine |
-| `infrastructure/` | Docker and nginx (serves the app, proxies `/datamodel` to eMachine) |
+| `infrastructure/` | Docker and nginx (serves the app) |
 | `scripts/` | Setup, start/stop, health check, export validation |
 | `docs/` | Architecture, API, configuration, deployment, security, troubleshooting |
 | `.apexstudio/` | Export metadata and integrity hashes |

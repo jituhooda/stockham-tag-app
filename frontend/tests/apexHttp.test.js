@@ -37,7 +37,7 @@ it('handles wrapped results', () => {
 
 it('builds form writes from allow-listed fields only', () => {
   const r = writeRequest('tag_other_expenses', { Id: 10000135, qty: '35.00', hacker: 'x', tag_id: undefined });
-  expect(r).toMatchObject({ method: 'POST', url: '/datamodel/api/tag_other_expenses', body: 'Id=10000135&qty=35.00' });
+  expect(r).toMatchObject({ method: 'POST', url: 'https://emachine.instantar.io/datamodel/api/tag_other_expenses', body: 'Id=10000135&qty=35.00' });
   expect(() => writeRequest('employees', { Id: 1 })).toThrow(/isn’t configured/);
 });
 

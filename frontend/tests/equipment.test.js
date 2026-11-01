@@ -13,9 +13,8 @@ it('adds equipment with the same request the existing app sends (description onl
   globalThis.fetch = fetchMock;
   const id = await apexApi.master.createEquipment({ description: 'Test-Eqp1' });
   const [url, init] = fetchMock.mock.calls[0];
-  expect(url).toBe('/datamodel/api/equipment_master');
+  expect(url).toBe('https://emachine.instantar.io/datamodel/api/equipment_master');
   expect(init.method).toBe('POST');
-  expect(init.headers['eml-service']).toBe('True');
   expect(init.body).toBe('description=Test-Eqp1');
   expect(id).toBe(10000032);
 });

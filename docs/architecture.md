@@ -7,23 +7,21 @@ database of its own: the browser reads and writes eMachine directly.
  Phone / tablet / desktop browser
             │
             ▼
- ┌──────────────────────────────┐   /datamodel/*   ┌──────────────────────────┐
- │ nginx (or the Vite dev server)│ ───────────────▶ │ eMachine                 │
- │ serves the React app          │   same-origin    │ model_query (read)       │
- └──────────────────────────────┘     proxy        │ /datamodel/api/<table>   │
-                                                    │ (insert / update)        │
-                                                    └──────────────────────────┘
+ Browser ── loads the React app from the static host (Netlify / nginx)
+    │
+    ├── https://emachine.instantar.io ──▶ model_query (read), /datamodel/api/<table> (insert / update),
+    │                                     /cloudproviders (file upload / delete)
+    └── https://stockham.emachine.ai/stockham ──▶ submit, Autodesk token
 ```
 
-- **Reads:** `GET /datamodel/api/model_query?query=<base64 SQL>`. Every query is
+- **Reads:** `GET https://emachine.instantar.io/datamodel/api/model_query?query=<base64 SQL>`. Every query is
   in `config/integrations.config.json`.
-- **Writes:** `POST /datamodel/api/<table>` with form fields. With `Id` the row is
+- **Writes:** `POST https://emachine.instantar.io/datamodel/api/<table>` with form fields. With `Id` the row is
   updated (only the changed fields are sent); without `Id` a row is inserted
   (cost lines also send `tag_id`).
-- **Reads vs. proxy:** reads (`model_query` SELECTs) go straight to `https://emachine.instantar.io`
-  (`VITE_EMACHINE_READ_URL`; eMachine allows CORS for them). Saves, deletes and uploads call `/datamodel/...` and
-  `/cloudproviders/...` on the app's own origin and nginx / Netlify forward them, because they send an `eml-service`
-  header that eMachine's CORS settings don't list. Set `VITE_EMACHINE_BASE_URL` to send those directly as well.
+- **Direct calls:** the browser calls `https://emachine.instantar.io` (reads, saves, deletes, uploads) and `https://stockham.emachine.ai/stockham`
+  (submit, Autodesk token) directly. eMachine's CORS settings allow it. Nothing is proxied through the app's own host, and the app sends no
+  `eml-service` header (eMachine's CORS settings don't allow it).
 - **Auth:** each request carries the user's eMachine bearer token (pasted on the
   sign-in screen, or built in with `VITE_EMACHINE_TOKEN`).
 

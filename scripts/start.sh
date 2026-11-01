@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Start the web app.
-#   scripts/start.sh            Vite dev server on :5173 (forwards /datamodel to eMachine)
+#   scripts/start.sh            Vite dev server on :5173 
 #   scripts/start.sh --docker   docker compose (nginx on :8080)
 source "$(dirname "$0")/_common.sh"
 

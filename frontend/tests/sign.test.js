@@ -54,8 +54,7 @@ it('adds a contact with the table\'s own columns, and checks the input first', a
   globalThis.fetch = fetchMock;
   const id = await apexApi.master.createApprover({ customerId: '1133', firstName: ' Ann ', lastName: 'Lee', email: ' ann@lee.com ' });
   const [url, init] = fetchMock.mock.calls[0];
-  expect(url).toBe('/datamodel/api/customercontact');
-  expect(init.headers['eml-service']).toBe('True');
+  expect(url).toBe('https://emachine.instantar.io/datamodel/api/customercontact');
   expect(Object.fromEntries(new URLSearchParams(init.body))).toEqual({ FirstName: 'Ann', LastName: 'Lee', Email: 'ann@lee.com', CustomerID: '1133' });
   expect(id).toBe(10011013);
   await expect(apexApi.master.createApprover({ customerId: '1133', firstName: '', lastName: '', email: 'a@b.com' })).rejects.toThrow(/first name/);
