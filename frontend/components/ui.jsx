@@ -1,6 +1,6 @@
 /**
  * Shared UI building blocks: buttons, status pills, the searchable select,
- * toasts, the signature pad and the Stockham logo.
+ * toasts, the signature pad and the Crew Tag logo.
  */
 import { createPortal } from 'react-dom';
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -10,9 +10,9 @@ export const cx = (...c) => c.filter(Boolean).join(' ');
 
 /* ---------------------------------------------------------------- Logo */
 
-/** The Stockham Construction logo (public/stockham-logo.png). */
+/** The Crew Tag logo (public/crew-tag-logo.png). */
 export function Logo({ className }) {
-  return <img className={cx('logo-img', className)} src="/stockham-logo.png" alt="Stockham Construction" width="500" height="231" draggable="false" />;
+  return <img className={cx('logo-img', className)} src="/crew-tag-logo.png" alt="Crew Tag" width="512" height="512" draggable="false" />;
 }
 
 /* ---------------------------------------------------------------- StatusPill */
