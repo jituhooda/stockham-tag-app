@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import './assets/styles.css';
+import { completeLogin, hasLoginResponse } from './lib/keycloak';
 import { consumeUrlToken } from './lib/urlToken';
 
 // Must run before the app reads the saved token.
@@ -18,8 +19,12 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+// Coming back from the Keycloak login page: swap the code for a token before the app reads it.
+const ready = hasLoginResponse() ? completeLogin() : Promise.resolve();
+ready.finally(() => {
+  createRoot(document.getElementById('root')).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+});

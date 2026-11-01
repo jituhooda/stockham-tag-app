@@ -17,9 +17,9 @@ export function MenuDrawer({ open, onClose }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  const logout = () => {
-    signOut();
+  const logout = async () => {
     onClose();
+    await signOut();
     if (isMobile()) window.location.href = LOGOUT_URL;
   };
 

@@ -9,7 +9,7 @@ import { apexApi } from '../../lib/apexApi';
 import { WritesDisabledError } from '../../lib/apexHttp';
 import { buildSignedDocBody, postSignedDoc, recallSignedDoc, rememberSignedDoc, signedDocLinks, signedDocProblems } from '../../lib/signedDoc';
 import { NEW_TAG_ID } from '../../services/tagModel';
-import { signatureProblems, submitProblems, tabForProblem } from '../../services/validation';
+import { SEND_REASONS, signatureProblems, submitProblems, tabForProblem } from '../../services/validation';
 import { useApp } from '../../state/AppContext';
 
 /**
@@ -65,6 +65,13 @@ export function SignTab({ tag, save, goTo, refresh, readOnly, busy, editor, foll
     const c = contacts.data.find((x) => x.id === id);
     if (c) setSig({ approverId: c.id, approver: c.name, email: c.email });
   };
+
+  // Start with the first approver in the list instead of a blank choice.
+  useEffect(() => {
+    const first = contacts.data[0];
+    if (readOnly || sig.approver || sig.approverId || !first) return;
+    setSig({ approverId: first.id, approver: first.name, email: first.email });
+  }, [contacts.data, readOnly, sig.approver, sig.approverId, setSig]);
 
   const addApprover = async (input) => {
     const email = input.email.trim().toLowerCase();
@@ -207,17 +214,25 @@ export function SignTab({ tag, save, goTo, refresh, readOnly, busy, editor, foll
             {sig.email && <p className="sig-email">{sig.email}</p>}
           </>
         ) : (
+          <>
+          <label className="field sig-reason">
+            <span className="field-label">Reason</span>
+            <select className="input" value={sig.reason || ''} disabled={readOnly} onChange={(e) => setSig({ reason: e.target.value })}>
+              {SEND_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </label>
           <label className="field">
             <span className="field-label">Approver email</span>
             <input className="input" type="email" inputMode="email" autoComplete="email" placeholder="name@company.com"
               value={sig.email} disabled={readOnly} onChange={(e) => setSig({ email: e.target.value.trim() })} />
           </label>
+          </>
         )}
 
         {sendMode && !readOnly && (
           <NotConnected what="Sending a tag for signature">
-            Submit works for “Sign in person”. Sending the tag to the approver to sign later needs its own request,
-            which hasn’t been captured yet.
+            Submit works for “Sign in person”. The reason and approver email are collected here, but sending the tag
+            to the approver to sign later needs its own request, which hasn’t been connected yet.
           </NotConnected>
         )}
       </div>

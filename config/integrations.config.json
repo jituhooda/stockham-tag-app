@@ -75,5 +75,11 @@
     "issueStatuses": "open,in_progress",
     "issuePageSize": 200,
     "jobFilter": "filter[jobNumber]"
+  },
+  "auth": {
+    "comment": "Sign in with Keycloak (authorization-code flow with PKCE, a public client; no secret). The browser is sent to the Keycloak login page and comes back to this site with a code, which is swapped for the user's token. Every address the app is served from (e.g. https://<site>/*) must be listed under Valid redirect URIs of the client in Keycloak. Logout ends the Keycloak session with the refresh token.",
+    "issuer": "https://secure.emachine.ai/kc/realms/Stockham",
+    "clientId": "emachine",
+    "scope": "openid profile email"
   }
 }

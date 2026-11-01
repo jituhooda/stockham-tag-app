@@ -27,6 +27,10 @@ visible to everyone who can load it; see "Tokens" below.
   anything in `VITE_*` is readable by everyone who loads the site. If you need a
   built-in token, ask the eMachine admin for one limited to the tag tables.
 - Tokens shared in chat or email should be revoked and re-issued.
+- **Sign in with Keycloak** (default): authorization code + PKCE, no client secret in the app. The response comes back in
+  the URL fragment (`#code=...&state=...`), is verified (state, nonce) and removed from the address bar
+  (`frontend/lib/keycloak.js`). The access and refresh tokens are kept in localStorage like a pasted token. Logout ends
+  the Keycloak session; Keycloak settings are listed in `docs/configuration.md`.
 - **Sign-in by link:** `https://<site>/#token=<JWT>` signs the user in without the paste screen. The token is in
   the URL *fragment*, which browsers never send to a server (so it stays out of ngrok/Netlify/proxy logs and the
   `Referer` header). The app saves it, removes it from the address bar, and ignores expired or malformed tokens

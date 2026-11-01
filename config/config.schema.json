@@ -193,6 +193,30 @@
           },
           "additionalProperties": false
         },
+        "auth": {
+          "type": "object",
+          "required": [
+            "issuer",
+            "clientId"
+          ],
+          "properties": {
+            "comment": {
+              "type": "string"
+            },
+            "issuer": {
+              "type": "string",
+              "format": "uri",
+              "description": "Keycloak realm URL, e.g. https://host/kc/realms/Stockham"
+            },
+            "clientId": {
+              "type": "string"
+            },
+            "scope": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
         "forma": {
           "type": "object",
           "required": [

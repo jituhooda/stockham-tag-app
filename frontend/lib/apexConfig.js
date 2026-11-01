@@ -12,6 +12,7 @@ const emachine = integrations.emachine;
 const forma = integrations.forma;
 const uploads = integrations.uploads;
 const submit = integrations.submit;
+const auth = integrations.auth;
 const bearer = (v) => (v || '').trim().replace(/^Bearer\s+/i, '');
 const flag = (value, fallback) => (value == null || value === '' ? fallback : String(value).toLowerCase() === 'true');
 
@@ -61,10 +62,19 @@ export const apexConfig = {
     issuePageSize: forma.issuePageSize || 200,
     tokenUrl: (env.VITE_FORMA_TOKEN_URL || forma.tokenUrl || '').trim(),
   },
+  /** Keycloak sign-in (authorization code + PKCE). Without auth.issuer the app only offers the paste-a-token screen. */
+  auth: {
+    issuer: (env.VITE_KEYCLOAK_ISSUER || auth?.issuer || '').replace(/\/$/, ''),
+    clientId: env.VITE_KEYCLOAK_CLIENT_ID || auth?.clientId || '',
+    scope: auth?.scope || 'openid profile email',
+  },
   editableStatuses: appConfig.editableStatuses || ['Draft', 'Rejected'],
   storageKeys: {
     token: 'stockham.emachineToken',
     settings: 'stockham.settings.v2',
     installHintDismissed: 'stockham.installHintDismissed',
+    refreshToken: 'stockham.kcRefreshToken',
+    lastEmail: 'stockham.lastEmail',
+    loginState: 'stockham.kcLogin',
   },
 };

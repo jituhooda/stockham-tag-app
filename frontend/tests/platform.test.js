@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { isMobile, isStandalone, platform } from '../lib/platform';
+import { browser, isMobile, isStandalone, platform } from '../lib/platform';
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1';
 const ANDROID = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36';
@@ -29,4 +29,20 @@ it('detects the Home Screen (standalone) mode', () => {
   expect(isStandalone({ standalone: true }, win(false))).toBe(true);
   expect(isStandalone({ standalone: false }, win(false))).toBe(false);
   expect(isStandalone({}, {})).toBe(false);
+});
+
+it('names the browser, including in-app browsers', () => {
+  const ios = (extra) => ({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 ${extra}` });
+  expect(browser(ios('Version/17.0 Mobile/15E148 Safari/604.1'))).toBe('safari');
+  expect(browser(ios('CriOS/120.0 Mobile/15E148 Safari/604.1'))).toBe('chrome');
+  expect(browser(ios('FxiOS/120.0 Mobile/15E148 Safari/605.1.15'))).toBe('firefox');
+  expect(browser(ios('Mobile/15E148 [FBAN/FBIOS;FBAV/450.0]'))).toBe('inapp');
+  expect(browser(ios('Mobile/15E148'))).toBe('inapp');
+
+  const droid = (extra) => ({ userAgent: `Mozilla/5.0 (Linux; Android 14; Pixel 8${extra}` });
+  expect(browser(droid(') AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36'))).toBe('chrome');
+  expect(browser(droid(') AppleWebKit/537.36 SamsungBrowser/23.0 Chrome/115.0 Mobile Safari/537.36'))).toBe('samsung');
+  expect(browser(droid('; wv) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36'))).toBe('inapp');
+  expect(browser(droid(') Gecko/120.0 Firefox/120.0'))).toBe('firefox');
+  expect(browser(droid(') AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36 OPR/76.0'))).toBe('other');
 });

@@ -1,6 +1,10 @@
 /** Checks a tag must pass before it can be submitted for signature. */
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Why the approver isn't signing on the spot ("Send for signature"). */
+export const SEND_REASONS = ['Not Onsite', 'Refused to Sign', 'Other'];
+export const DEFAULT_SEND_REASON = SEND_REASONS[0];
+
 export function submitProblems(tag) {
   const p = [];
   if (!tag.jobNo && !tag.jobName) p.push('Select a job on the Details tab');
@@ -17,10 +21,11 @@ export function submitProblems(tag) {
 /** Problems that stop a save: eMachine needs the chosen master record on every line. */
 export const saveProblems = (tag) => submitProblems(tag).filter((m) => !/job|description on|at least one/i.test(m));
 
-export function signatureProblems({ approver, mode, email, image }) {
+export function signatureProblems({ approver, mode, email, image, reason }) {
   const p = [];
   if (!approver?.trim()) p.push('Choose an approver');
   if (mode === 'in-person' && !image) p.push('The approver needs to sign above');
+  if (mode === 'send' && !SEND_REASONS.includes(reason)) p.push('Choose a reason for sending the tag for signature');
   if (mode === 'send' && !EMAIL_RE.test(email || '')) p.push('Enter a valid email to send the tag to');
   return p;
 }

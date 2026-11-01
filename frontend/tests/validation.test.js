@@ -28,7 +28,9 @@ it('saveProblems only blocks lines eMachine could not store', () => {
 
 it('signatureProblems', () => {
   expect(signatureProblems({ approver: 'Sean', mode: 'in-person', image: '' })).toEqual(['The approver needs to sign above']);
-  expect(signatureProblems({ approver: 'Sean', mode: 'send', email: 'sean@pb.com' })).toEqual([]);
+  expect(signatureProblems({ approver: 'Sean', mode: 'send', email: 'sean@pb.com', reason: 'Not Onsite' })).toEqual([]);
+  expect(signatureProblems({ approver: 'Sean', mode: 'send', email: 'sean@pb.com' })).toEqual(['Choose a reason for sending the tag for signature']);
+  expect(signatureProblems({ approver: 'Sean', mode: 'send', email: 'bad', reason: 'Other' })).toEqual(['Enter a valid email to send the tag to']);
 });
 
 it('maps problems to tabs', () => {

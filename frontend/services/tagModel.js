@@ -4,6 +4,7 @@
  * a stable React `key`.
  */
 import { apexConfig } from '../lib/apexConfig';
+import { DEFAULT_SEND_REASON } from './validation';
 
 let seq = 0;
 export const lineKey = () => `l${Date.now().toString(36)}${(seq++).toString(36)}`;
@@ -59,7 +60,7 @@ export function newTag() {
     expenses: [],
     issues: [],
     issuesLoaded: true, // a saved tag's issues are read when the Issues tab opens
-    signature: { approverId: '', approver: '', email: '', mode: 'in-person', image: '' },
+    signature: { approverId: '', approver: '', email: '', mode: 'in-person', image: '', reason: DEFAULT_SEND_REASON },
     attachments: [],
   };
 }

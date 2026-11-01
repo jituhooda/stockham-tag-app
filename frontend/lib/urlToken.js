@@ -1,5 +1,6 @@
 import { apexConfig } from './apexConfig';
 import { setToken, tokenClaims } from './apexHttp';
+import { forgetRefreshToken } from './keycloak';
 import { storage } from './storage';
 
 /**
@@ -30,5 +31,6 @@ export function consumeUrlToken(loc = window.location, hist = window.history, no
     storage.remove(apexConfig.storageKeys.settings);
   }
   setToken(token);
+  forgetRefreshToken();
   return true;
 }
