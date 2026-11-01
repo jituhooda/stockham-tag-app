@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
+import { OpenInChrome } from '../components/OpenInChrome';
 import { Logo } from '../components/ui';
 import { browser, isStandalone, platform } from '../lib/platform';
 import {
@@ -153,6 +154,8 @@ export function InstallPage() {
             </section>
           ))
         )}
+
+        {mobile && <OpenInChrome className="install__chrome center" />}
 
         {!mobile && <section className="install__card install__share">
           {qr && <img className="install__qr" src={qr} alt={`QR code for ${installUrl}`} width="180" height="180" />}

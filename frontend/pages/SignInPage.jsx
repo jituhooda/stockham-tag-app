@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { OpenInChrome } from '../components/OpenInChrome';
 import { Logo } from '../components/ui';
 import { keycloakEnabled, startLogin, takeLoginError } from '../lib/keycloak';
 import { useApp } from '../state/AppContext';
@@ -41,6 +42,7 @@ export function SignInPage() {
             <button className="btn btn--dark btn--block" disabled={busy}>{busy ? 'Opening…' : 'Sign in'}</button>
           </>
         )}
+        <OpenInChrome className="signin__chrome" />
       </form>
     </div>
   );

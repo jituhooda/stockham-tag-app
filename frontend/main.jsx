@@ -3,7 +3,11 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import './assets/styles.css';
 import { completeLogin, hasLoginResponse } from './lib/keycloak';
+import { openInChromeOnAndroid } from './lib/openInChrome';
 import { consumeUrlToken } from './lib/urlToken';
+
+// Android: prefer Chrome. Must run before consumeUrlToken, which removes the #token= this checks for.
+openInChromeOnAndroid();
 
 // Must run before the app reads the saved token.
 consumeUrlToken();
