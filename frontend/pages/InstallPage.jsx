@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { Logo } from '../components/ui';
-import { platform } from '../lib/platform';
+import { isStandalone, platform } from '../lib/platform';
 import {
   AndroidDialogArt, ChromeInstallItemArt, ChromeMenuArt, HomeScreenArt, IosAddDialogArt, OpenBrowserArt, SafariMenuArt, ShareSheetArt,
 } from '../components/InstallArt';
@@ -11,7 +11,6 @@ const baseUrl = (import.meta.env.VITE_PUBLIC_URL || window.location.origin).repl
 const installUrl = `${baseUrl}/install`;
 const host = baseUrl.replace(/^https?:\/\//, '');
 
-const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
 const detectPlatform = () => (platform() === 'android' ? 'android' : 'ios');
 
 const steps = {

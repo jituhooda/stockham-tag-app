@@ -12,3 +12,7 @@ export function platform(nav = typeof navigator === 'undefined' ? {} : navigator
 }
 
 export const isMobile = (nav) => platform(nav) !== 'desktop';
+
+/** True when running from the Home Screen icon (no browser bars). */
+export const isStandalone = (nav = navigator, win = window) =>
+  !!win.matchMedia?.('(display-mode: standalone)').matches || nav.standalone === true;

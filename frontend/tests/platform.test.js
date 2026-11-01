@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { isMobile, platform } from '../lib/platform';
+import { isMobile, isStandalone, platform } from '../lib/platform';
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1';
 const ANDROID = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36';
@@ -21,4 +21,12 @@ it('treats laptops and unknown agents as desktop', () => {
   expect(platform({})).toBe('desktop');
   expect(isMobile({ userAgent: WINDOWS })).toBe(false);
   expect(isMobile({ userAgent: ANDROID })).toBe(true);
+});
+
+it('detects the Home Screen (standalone) mode', () => {
+  const win = (matches) => ({ matchMedia: () => ({ matches }) });
+  expect(isStandalone({}, win(true))).toBe(true);
+  expect(isStandalone({ standalone: true }, win(false))).toBe(true);
+  expect(isStandalone({ standalone: false }, win(false))).toBe(false);
+  expect(isStandalone({}, {})).toBe(false);
 });

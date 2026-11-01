@@ -65,5 +65,6 @@ export const apexConfig = {
   storageKeys: {
     token: 'stockham.emachineToken',
     settings: 'stockham.settings.v2',
+    installHintDismissed: 'stockham.installHintDismissed',
   },
 };

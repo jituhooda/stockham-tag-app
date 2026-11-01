@@ -1,4 +1,5 @@
 import { RouterProvider } from 'react-router-dom';
+import { InstallHint } from './components/InstallHint';
 import { ToastProvider } from './components/ui';
 import { InstallPage } from './pages/InstallPage';
 import { SignInPage } from './pages/SignInPage';
@@ -12,6 +13,7 @@ function Gate() {
   return (
     <TagListProvider>
       <RouterProvider router={router} />
+      <InstallHint />
     </TagListProvider>
   );
 }
