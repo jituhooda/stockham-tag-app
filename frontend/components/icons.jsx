@@ -14,6 +14,7 @@ const base = ({ size = 20, ...p }) => ({
 });
 
 export const IconMenu = (p) => (<svg {...base(p)}><path d="M4 6h16M4 12h16M4 18h16" /></svg>);
+export const IconUser = (p) => (<svg {...base(p)} fill="currentColor" stroke="none"><circle cx="12" cy="8.5" r="4.2" /><path d="M3.5 21c.5-4.6 4-7 8.5-7s8 2.4 8.5 7z" /></svg>);
 export const IconBack = (p) => (<svg {...base(p)}><path d="M20 12H4m6-7-6 7 6 7" /></svg>);
 export const IconChevronRight = (p) => (<svg {...base(p)}><path d="m9 5 7 7-7 7" /></svg>);
 export const IconChevronDown = (p) => (<svg {...base(p)}><path d="m6 9 6 6 6-6" /></svg>);

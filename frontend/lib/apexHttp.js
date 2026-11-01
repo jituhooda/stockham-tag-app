@@ -33,7 +33,8 @@ export const onUnauthorized = (fn) => {
   return () => listeners.delete(fn);
 };
 
-export const getToken = () => cfg.token || storage.get(apexConfig.storageKeys.token, '');
+/** Saved token (pasted, or from a #token= link) first; the build-time VITE_EMACHINE_TOKEN is only a fallback. */
+export const getToken = () => storage.get(apexConfig.storageKeys.token, '') || cfg.token;
 export const setToken = (token) =>
   token ? storage.set(apexConfig.storageKeys.token, token) : storage.remove(apexConfig.storageKeys.token);
 

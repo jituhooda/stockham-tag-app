@@ -1,17 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
-import { clearMasterDataCache, useMasterData } from '../hooks/useMasterData';
-import { apexApi } from '../lib/apexApi';
+import { useEffect } from 'react';
 import { useApp } from '../state/AppContext';
-import { useTagList } from '../state/TagListContext';
-import { IconClose, IconRefresh } from './icons';
-import { Logo, SearchSelect, useToast } from './ui';
+import { isMobile } from '../lib/platform';
+import { IconClose, IconUser } from './icons';
+import { Logo } from './ui';
+
+// On a phone, logging out hands over to the Stockham app.
+const LOGOUT_URL = 'stockham://emachine.ai/';
 
 export function MenuDrawer({ open, onClose }) {
-  const { config, user, settings, setSettings, divisions, signOut, canSignOut, writesEnabled } = useApp();
-  const { refresh } = useTagList();
-  const employees = useMasterData('employees');
-  const toast = useToast();
-  const [busy, setBusy] = useState(false);
+  const { config, user, signOut, canSignOut, writesEnabled } = useApp();
 
   useEffect(() => {
     if (!open) return undefined;
@@ -20,10 +17,11 @@ export function MenuDrawer({ open, onClose }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  const options = useMemo(
-    () => employees.data.filter((e) => e.employee).map((e) => ({ value: e.employee, label: e.name, sub: [e.employee, e.division].filter(Boolean).join(' · ') })),
-    [employees.data],
-  );
+  const logout = () => {
+    signOut();
+    onClose();
+    if (isMobile()) window.location.href = LOGOUT_URL;
+  };
 
   if (!open) return null;
   return (
@@ -34,41 +32,14 @@ export function MenuDrawer({ open, onClose }) {
           <button className="icon-btn" onClick={onClose} aria-label="Close menu"><IconClose size={22} /></button>
         </div>
 
-        <section className="drawer__section">
-          <span className="field-label">Show jobs for</span>
-          <SearchSelect
-            value={settings.employeeName || settings.employee}
-            options={options}
-            loading={employees.loading}
-            searchIcon
-            ariaLabel="Current employee"
-            placeholder={employees.error ? 'Employees unavailable' : 'Choose your name'}
-            disabled={busy}
-            onChange={async (o) => {
-              setBusy(true);
-              try {
-                const res = await apexApi.master.division(o.value);
-                setSettings({ employee: o.value, employeeName: o.label, divisions: res.divisions });
-                toast(`Showing jobs for ${res.divisions.join(', ')}`);
-              } catch (e) {
-                toast(e.message || 'Could not look up the division', 'error');
-              } finally {
-                setBusy(false);
-              }
-            }}
-          />
-          <p className="muted small">Division{divisions.length > 1 ? 's' : ''}: <strong>{divisions.join(', ')}</strong></p>
-        </section>
-
-        <section className="drawer__section">
-          <button className="btn btn--outline btn--block" onClick={() => { clearMasterDataCache(); refresh(); toast('Refreshing…'); onClose(); }}>
-            <IconRefresh size={18} /> Refresh data
-          </button>
-          {canSignOut && <button className="btn btn--outline btn--block" onClick={signOut}>Sign out</button>}
+        <section className="drawer__account" aria-label="Signed-in user">
+          <span className="drawer__avatar"><IconUser size={34} /></span>
+          <strong className="drawer__user">{user.name}</strong>
+          {user.email && <span className="drawer__email">{user.email}</span>}
+          {canSignOut && <button className="drawer__logout" onClick={logout}>Logout</button>}
         </section>
 
         <footer className="drawer__foot muted small">
-          <div>Signed in as {user.name}</div>
           {!writesEnabled && <div>Saving to eMachine is off</div>}
           {config.branding.companyName} · v{config.app.version}
         </footer>

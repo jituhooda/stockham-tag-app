@@ -27,6 +27,11 @@ visible to everyone who can load it; see "Tokens" below.
   anything in `VITE_*` is readable by everyone who loads the site. If you need a
   built-in token, ask the eMachine admin for one limited to the tag tables.
 - Tokens shared in chat or email should be revoked and re-issued.
+- **Sign-in by link:** `https://<site>/#token=<JWT>` signs the user in without the paste screen. The token is in
+  the URL *fragment*, which browsers never send to a server (so it stays out of ngrok/Netlify/proxy logs and the
+  `Referer` header). The app saves it, removes it from the address bar, and ignores expired or malformed tokens
+  (`frontend/lib/urlToken.js`). Don't use a `?token=` query string. The link itself is still a credential: use
+  short-lived tokens and don't post it in chat or email.
 - The nginx proxy drops cookies and the `Origin` header, so only the bearer token
   authenticates requests.
 

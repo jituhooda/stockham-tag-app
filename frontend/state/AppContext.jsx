@@ -21,20 +21,21 @@ export function AppProvider({ children }) {
     setTokenState(getToken());
   }, []);
 
+  const setSettings = useCallback((next) => {
+    setSettingsState(next);
+    storage.set(apexConfig.storageKeys.settings, next);
+  }, []);
+
   const signOut = useCallback(() => {
     setToken('');
     setTokenState(getToken()); // a build-time token can't be signed out of
-  }, []);
+    setSettings({ employee: '', employeeName: '', divisions: [] }); // the next person starts clean
+  }, [setSettings]);
 
   useEffect(() => onUnauthorized(() => {
     setToken('');
     setTokenState(apexConfig.emachine.token ? '' : getToken());
   }), []);
-
-  const setSettings = useCallback((next) => {
-    setSettingsState(next);
-    storage.set(apexConfig.storageKeys.settings, next);
-  }, []);
 
   const user = useMemo(() => {
     const c = tokenClaims(token);
@@ -55,7 +56,7 @@ export function AppProvider({ children }) {
     () => ({
       config: apexConfig,
       signedIn: !!token,
-      canSignOut: !apexConfig.emachine.token,
+      canSignOut: !apexConfig.emachine.token || token !== apexConfig.emachine.token,
       user,
       signIn,
       signOut,
