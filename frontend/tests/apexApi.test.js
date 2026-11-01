@@ -125,3 +125,11 @@ it('does not send writes when the app is read-only', async () => {
   await expect(apexApi.tags.save({ ...saved, description: 'x' }, saved)).rejects.toThrow(/Read-only mode/);
   expect(fetchMock).not.toHaveBeenCalled();
 });
+
+it('asks eMachine for the next tag number of a job (the query is base64 of the agreed SQL)', async () => {
+  globalThis.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { records: [{ next_tag_number: 'A2155-4' }] } })));
+  expect(await apexApi.tags.nextNumber('A2155')).toBe('A2155-4');
+  const url = new URL(globalThis.fetch.mock.calls[0][0], 'http://x');
+  const sql = atob(url.searchParams.get('query'));
+  expect(sql).toBe("SELECT CONCAT( 'A2155', '-', COALESCE( MAX(CAST(SUBSTRING_INDEX(tag_number, '-', -1) AS UNSIGNED)), 0 ) + 1 ) AS next_tag_number FROM tags WHERE tag_number LIKE 'A2155-%'");
+});

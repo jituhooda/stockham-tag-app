@@ -27,6 +27,17 @@ export function useTagEditor(id, initial) {
         const start = id === NEW_TAG_ID && initial ? { ...t, ...initial } : t;
         setSaved(start);
         setForm(start);
+        if (id === NEW_TAG_ID && start.jobNo) {
+          // Self-populated; if the lookup fails the number is assigned when the tag is saved.
+          apexApi.tags
+            .nextNumber(start.jobNo, ctrl.signal)
+            .then((tagNumber) => {
+              if (!tagNumber || ctrl.signal.aborted) return;
+              setSaved((s) => (s ? { ...s, tagNumber } : s));
+              setForm((f) => (f ? { ...f, tagNumber } : f));
+            })
+            .catch(() => {});
+        }
       })
       .catch((e) => !ctrl.signal.aborted && setError(e))
       .finally(() => !ctrl.signal.aborted && setLoading(false));

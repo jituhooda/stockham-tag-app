@@ -5,7 +5,7 @@ import { useApp } from '../../state/AppContext';
 
 /**
  * The tag's Details tab. The job is fixed (chosen when the tag was created), so it is shown,
- * not edited. A saved tag shows its number; a new one asks for it.
+ * not edited. The tag number is never typed: a new tag gets the job's next number automatically.
  */
 export function DetailsTab({ tag, edit, save, readOnly, busy }) {
   const { config, user, settings } = useApp();
@@ -26,12 +26,7 @@ export function DetailsTab({ tag, edit, save, readOnly, busy }) {
           <div className="nt__cols nt__row">
             <div className="nt__tagno">
               <label className="nt__label" htmlFor="nt-tag-number">Tag #</label>
-              {isNew ? (
-                <input id="nt-tag-number" className="nt__inline" value={tag.tagNumber} disabled={readOnly} placeholder="Enter Text"
-                  onChange={(e) => edit({ tagNumber: e.target.value })} />
-              ) : (
-                <span id="nt-tag-number" className="nt__value">{tag.tagNumber}</span>
-              )}
+              <span id="nt-tag-number" className="nt__value">{tag.tagNumber || (isNew ? '…' : '')}</span>
             </div>
             <StatusPill status={tag.status} />
           </div>

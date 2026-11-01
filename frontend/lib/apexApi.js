@@ -417,8 +417,18 @@ export const apexApi = {
       return { details, found: forma.found, error: forma.error };
     },
 
-    /** Create a tag and its lines. */
+    /** The next tag number for a job: "{jobNo}-{n}", one past the highest number already used for that job. */
+    nextNumber: async (jobNo, signal) => {
+      const job = String(jobNo || '').trim();
+      if (!job) return '';
+      const [r] = await query('nextTagNumber', { jobNo: sqlString(job), jobPattern: sqlString(`${job}-%`) }, signal);
+      return r ? text(r, 'next_tag_number') : '';
+    },
+
+    /** Create a tag and its lines. The tag number is read again so two people creating tags at once don't share one. */
     create: async (form) => {
+      const tagNumber = await apexApi.tags.nextNumber(form.jobNo).catch(() => '');
+      if (tagNumber) form = { ...form, tagNumber };
       const [res] = await runWrites([newTagRequest(form)]);
       let id = insertedId(res);
       if (id == null) {
