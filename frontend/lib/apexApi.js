@@ -8,7 +8,7 @@ import { formaFindProject, formaIssue, formaIssues, formaProjectExists } from '.
 import { ApiError, deleteCloudFile, fileUrlFrom, insertedId, query, runDelete, runWrites, uploadFile, sqlInt, sqlString, writeRequest } from './apexHttp';
 import { isoDate, labelOf, num, pick, text, truthy } from '../services/fields';
 import { EMAIL_RE } from '../services/validation';
-import { buildSignedDocBody } from './signedDoc';
+import { buildCostItems, buildSignedDocBody, rateTable, tradeNameTable } from './signedDoc';
 import { NEW_TAG_ID, fixed, isEditable, lineKey, newTag, plain } from '../services/tagModel';
 
 const dedupe = (items) => {
@@ -517,7 +517,7 @@ export const apexApi = {
     submitData: async (tag, signal) => {
       const tagId = sqlInt(tag.id);
       const premium = tag.isPremium ? '1' : '0';
-      const [jobs, labor, materials, equipment, expenses, photos, issueRows] = await Promise.all([
+      const [jobs, labor, materials, equipment, expenses, photos, issueRows, costRows, rateRows, tradeRows] = await Promise.all([
         tag.jobNo ? query('submitJob', { jobNo: sqlString(String(tag.jobNo).slice(0, 50)) }, signal) : [],
         query('submitLabor', { tagId, premium }, signal),
         query('submitMaterials', { tagId }, signal),
@@ -525,7 +525,12 @@ export const apexApi = {
         query('submitExpenses', { tagId }, signal),
         query('submitPhotos', { tagId }, signal),
         apexApi.tags.issueRows(tag.id, signal),
+        query('submitCostItems', { tagId }, signal),
+        query('laborRates', {}, signal),
+        query('tradeNames', {}, signal),
       ]);
+      // The Autodesk cost items with their estimated cost, worked out now (at Submit) from the rates in eMachine.
+      const costItems = buildCostItems(costRows.map((r) => ({ code: text(r, 'code'), name: text(r, 'name'), quantity: text(r, 'quantity') })), !!tag.isPremium, rateTable(rateRows), tradeNameTable(tradeRows.map((r) => ({ TradeCode: text(r, 'TradeCode'), display_name: text(r, 'display_name') }))));
       let issues = [];
       if (issueRows.length) {
         const facts = await apexApi.issues.options(tag.jobNo);
@@ -535,7 +540,7 @@ export const apexApi = {
         }
         issues = lines.map((l) => l.label);
       }
-      return { job: jobs[0] || null, labor, materials, equipment, expenses, photos, issues };
+      return { job: jobs[0] || null, labor, materials, equipment, expenses, photos, issues, costItems };
     },
 
     /**

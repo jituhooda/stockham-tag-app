@@ -178,6 +178,26 @@ Same steps, but with the "Send for signature" choice the document is posted to
 `signer_name`. `customer_email` is the approver email typed on the Sign tab. The app then sets the tag to `Submitted` as above and shows
 a "Sent for signature" popup with the email; the service's reply isn't used.
 
+### Cost items for Autodesk (worked out at Submit)
+
+When it reads the tag back, Submit also works out what the old Blockly app's `LoadCostItems` did, and adds two fields to the JSON
+(after `files_table`):
+
+- `is_premium`: `true` for "OT - Premium Time Only".
+- `cost_items`: `[{ "code", "name", "quantity", "estimated", "budget_name" }]` (numbers, not text; `budget_name` is the name for the budget line if Autodesk doesn't have the code yet, from the trade list, as Blockly's `GetTradeCodeName`), one per grouped line of the tag, from the
+  `submitCostItems` query (same SQL as the Blockly one, without the change order id, which the service assigns): labor per trade
+  (`<TradeCode>1`, "<Trade> Regular|Overtime|Doubletime (Labor)"), materials (`<TradeCode>2`), rented equipment (`915`) and other
+  expenses (`<CostCodeID>7`).
+- `estimated` = quantity × rate, with the rates read from `tag_labor_rates` (`laborRates` query):
+  Extra Work: Regular × `NC_REG`, Overtime × `NC_OT`, Doubletime × `NC_DT`. Premium: Overtime × `PT_OT`, Doubletime × `PT_DT`, Regular 0.
+  Materials, equipment and other expenses are 0. If a labor rate that is needed is missing, Submit stops with an error.
+
+Both endpoints (`create-stockham-signed-doc` and `create-stockham-request-autodesk`) take the same two fields. When `cost_items` is present
+the service (`stockham-services`, `autodesk_cost.py`) creates the Autodesk change order (PCO), any missing budget lines and the cost items,
+after the PDF and emails are done. The app never calls Autodesk Cost. The reply gets `autodesk_cost`: `{ ok: true, change_order_id,
+budgets_created, cost_items_created }`, or `{ ok: false, error }` (the app then shows "Submitted, but the Autodesk cost items were not created: …";
+`skipped: true` when the service has `AUTODESK_COST_ENABLED` off, which the app ignores).
+
 Assumptions to confirm with a real run: `pm_email` is the job's PM email (the sample used the originator's), `job_city_zip` is the
 job's City, and the service (not the app) updates the tag's status/signature columns. Tested only against fakes, never live.
 

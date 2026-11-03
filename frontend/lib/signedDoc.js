@@ -10,6 +10,64 @@ const str = (v) => (v == null ? '' : String(v));
 /** A data URL (or bare base64) of a PNG → bare base64, which is what the service expects. */
 export const pngBase64 = (v) => str(v).replace(/^data:image\/[a-z+.-]+;base64,/i, '').replace(/\s+/g, '');
 
+/**
+ * Labor rates from tag_labor_rates (LaborType → Amount) as numbers. NC = non-contract, PT = premium time;
+ * REG / OT / DT = regular, overtime, double time.
+ */
+export function rateTable(rows) {
+  const rates = {};
+  for (const r of rows || []) {
+    const amount = Number(r.Amount);
+    if (r.LaborType && Number.isFinite(amount)) rates[String(r.LaborType).trim()] = amount;
+  }
+  return rates;
+}
+
+const CODE_KINDS = { 1: 'Labor', 2: 'Materials', 4: 'Owned Equipment', 5: 'Rented Equipment' };
+
+/**
+ * The name for a budget line if Autodesk doesn't have its cost code yet (the old Blockly GetTradeCodeName): the trade's display name for
+ * the code without its last digit, plus what the last digit means ("Drywall-Labor"). `trades` maps a trade code to its display name.
+ */
+export function budgetName(code, trades) {
+  const display = trades[code.slice(0, -1)];
+  if (display) return `${display}-${CODE_KINDS[code.slice(-1)] || 'Other'}`;
+  if (code === '915') return 'EQUIPMENT: Rented Equipment';
+  if (code === '897') return 'SMALL TOOLS: Other';
+  return 'Unknown Code';
+}
+
+/** { TradeCode: display name } from the tradeNames rows. */
+export function tradeNameTable(rows) {
+  const trades = {};
+  for (const r of rows || []) if (r.TradeCode && r.display_name) trades[String(r.TradeCode).trim()] = String(r.display_name).trim();
+  return trades;
+}
+
+/**
+ * The Autodesk cost items (the old Blockly app's LoadCostItems): each grouped line from the tag with its estimated cost.
+ *   Extra Work (not premium): "... Regular (Labor)" = qty × NC_REG, "... Overtime (Labor)" = qty × NC_OT, "... Doubletime (Labor)" = qty × NC_DT
+ *   OT - Premium Time Only:   "... Overtime (Labor)" = qty × PT_OT, "... Doubletime (Labor)" = qty × PT_DT, anything else 0
+ *   Materials, equipment and other expenses: estimated 0 (only the quantity goes to Autodesk).
+ * `rows` are { code, name, quantity }; a labor rate that is needed but missing throws, so nothing is sent with a made-up cost.
+ */
+export function buildCostItems(rows, isPremium, rates, trades = {}) {
+  const rateFor = (name) => {
+    const kind = /Doubletime \(Labor\)/.test(name) ? 'DT' : /Overtime \(Labor\)/.test(name) ? 'OT' : /Regular \(Labor\)/.test(name) ? 'REG' : '';
+    if (!kind || (isPremium && kind === 'REG')) return 0;
+    const key = `${isPremium ? 'PT' : 'NC'}_${kind}`;
+    if (!(key in rates)) throw new ApiError(`The labor rate ${key} is missing in tag_labor_rates, so the cost can't be worked out.`);
+    return rates[key];
+  };
+  return (rows || []).map((r) => {
+    const quantity = Number(r.quantity) || 0;
+    return {
+      code: str(r.code), name: str(r.name), quantity, estimated: Math.round(quantity * rateFor(str(r.name)) * 100) / 100,
+      budget_name: budgetName(str(r.code), trades),
+    };
+  });
+}
+
 const rows = (list, fields) => (list || []).map((r) => Object.fromEntries(fields.map((f) => [f, str(r[f])])));
 
 /**
@@ -43,6 +101,8 @@ export function buildSignedDocBody({ tag, signature, user, data }) {
     equipment_table: rows(data.equipment, ['Description', 'Qty']),
     expense_table: rows(data.expenses, ['Description', 'Amount']),
     files_table: rows(data.photos, ['photo_url']),
+    // Only when the cost items were worked out: the service creates the Autodesk change order from them.
+    ...(data.costItems ? { is_premium: !!tag.isPremium, cost_items: data.costItems } : {}),
   };
 }
 

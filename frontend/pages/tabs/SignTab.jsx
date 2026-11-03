@@ -128,7 +128,10 @@ export function SignTab({ tag, save, goTo, refresh, readOnly, busy, editor, foll
         return;
       }
       setStage(sig.mode === 'send' ? 'Sending…' : 'Creating document…');
-      const links = signedDocLinks(await postSignedDoc(body, user.email));
+      const reply = await postSignedDoc(body, user.email);
+      const links = signedDocLinks(reply);
+      const cost = reply && typeof reply === 'object' ? reply.autodesk_cost : null;
+      if (cost && cost.ok === false && !cost.skipped) toast(`Submitted, but the Autodesk cost items were not created: ${String(cost.error || 'unknown error').slice(0, 200)}`, 'error');
       if (links.pdf) rememberSignedDoc(current.id, links);
       setStage('Finishing…');
       let done;

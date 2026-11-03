@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import sample from './fixtures-signed-doc.json';
 import { apexApi } from '../lib/apexApi';
 import { apexConfig } from '../lib/apexConfig';
-import { buildSignedDocBody, pngBase64, postSignedDoc, recallSignedDoc, rememberSignedDoc, signedDocLinks, signedDocProblems } from '../lib/signedDoc';
+import { buildCostItems, buildSignedDocBody, pngBase64, postSignedDoc, recallSignedDoc, rememberSignedDoc, signedDocLinks, signedDocProblems, rateTable, budgetName, tradeNameTable } from '../lib/signedDoc';
 
 const json = (b, status = 200) => new Response(JSON.stringify(b), { status });
 const sqlOf = (url) => { const q = decodeURIComponent(new URL(url, 'http://x').searchParams.get('query')).replace(/=+$/, ''); return atob(q + '='.repeat((4 - (q.length % 4)) % 4)); };
@@ -162,4 +162,65 @@ it('posts a send-for-signature body to the send endpoint', async () => {
   expect(globalThis.fetch.mock.calls[0][0]).toBe(apexConfig.submit.sendUrl);
   expect(globalThis.fetch.mock.calls[0][0]).toMatch(/create-stockham-request-autodesk$/);
   expect(JSON.parse(globalThis.fetch.mock.calls[0][1].body).unsign_reason).toBe('Other');
+});
+
+// Rates as in tag_labor_rates; the rows are what the cost-items query returns for a tag.
+const rates = rateTable([{ LaborType: 'NC_REG', Amount: '153.15' }, { LaborType: 'NC_OT', Amount: '208.33' }, { LaborType: 'NC_DT', Amount: '263.51' }, { LaborType: 'PT_OT', Amount: '55.18' }, { LaborType: 'PT_DT', Amount: '110.36' }]);
+const costRows = [
+  { code: '127', name: 'Haul Out / Dump Runs (Other)', quantity: '44.0' },
+  { code: '915', name: '6E (Rented Equipment)', quantity: '44.0' },
+  { code: '931', name: 'Drywall Doubletime (Labor)', quantity: '4.0' },
+  { code: '931', name: 'Drywall Overtime (Labor)', quantity: '4.0' },
+  { code: '931', name: 'Drywall Regular (Labor)', quantity: '44.0' },
+  { code: '942', name: 'Taping: roll of tape : 4 (Material)', quantity: '4.0' },
+];
+
+it('cost items, Extra Work: regular × NC_REG, overtime × NC_OT, double time × NC_DT, everything else 0', () => {
+  expect(buildCostItems(costRows, false, rates).map((c) => [c.name, c.estimated])).toEqual([
+    ['Haul Out / Dump Runs (Other)', 0], ['6E (Rented Equipment)', 0], ['Drywall Doubletime (Labor)', 1054.04],
+    ['Drywall Overtime (Labor)', 833.32], ['Drywall Regular (Labor)', 6738.6], ['Taping: roll of tape : 4 (Material)', 0],
+  ]);
+});
+
+it('cost items, OT - Premium Time Only: overtime × PT_OT, double time × PT_DT, regular and everything else 0', () => {
+  expect(buildCostItems(costRows, true, rates).map((c) => [c.name, c.estimated])).toEqual([
+    ['Haul Out / Dump Runs (Other)', 0], ['6E (Rented Equipment)', 0], ['Drywall Doubletime (Labor)', 441.44],
+    ['Drywall Overtime (Labor)', 220.72], ['Drywall Regular (Labor)', 0], ['Taping: roll of tape : 4 (Material)', 0],
+  ]);
+});
+
+it('cost items: quantities are numbers, and a missing labor rate stops the submit instead of sending a made-up cost', () => {
+  expect(buildCostItems(costRows, false, rates, { 93: 'Drywall' })[2]).toEqual({ code: '931', name: 'Drywall Doubletime (Labor)', quantity: 4, estimated: 1054.04, budget_name: 'Drywall-Labor' });
+  expect(() => buildCostItems(costRows, false, rateTable([{ LaborType: 'NC_REG', Amount: '1' }]))).toThrow(/labor rate NC_\w+ is missing/);
+  expect(buildCostItems([costRows[0]], false, {})).toHaveLength(1); // no labor rows: no rate needed
+});
+
+it('the request carries is_premium and cost_items when they were worked out, and is unchanged otherwise', () => {
+  const items = buildCostItems(costRows, true, rates);
+  const body = buildSignedDocBody({ tag: { ...tag, isPremium: true }, signature, user, data: { ...data, costItems: items } });
+  expect(body.is_premium).toBe(true);
+  expect(body.cost_items).toEqual(items);
+  expect(Object.keys(body).slice(-2)).toEqual(['is_premium', 'cost_items']);
+  expect(buildSignedDocBody({ tag, signature, user, data })).toEqual(sample);
+});
+
+it('submitData reads the cost items and the rates, and returns the estimated costs', async () => {
+  const seen = [];
+  globalThis.fetch = vi.fn().mockImplementation(async (url) => {
+    const sql = sqlOf(url); seen.push(sql);
+    if (sql.includes('FROM tag_labor_rates')) return json({ data: { records: [{ LaborType: 'NC_REG', Amount: '153.15' }, { LaborType: 'NC_OT', Amount: '208.33' }, { LaborType: 'NC_DT', Amount: '263.51' }] } });
+    if (sql.startsWith('SELECT code, name, quantity')) return json({ data: { records: [{ code: '931', name: 'Drywall Regular (Labor)', quantity: '2.0' }] } });
+    return json({ data: { records: [] } });
+  });
+  const result = await apexApi.tags.submitData({ id: '10000099', jobNo: 'A2155', isPremium: false });
+  expect(result.costItems).toEqual([{ code: '931', name: 'Drywall Regular (Labor)', quantity: 2, estimated: 306.3, budget_name: 'Unknown Code' }]);
+  expect(seen.find((s) => s.startsWith('SELECT code, name, quantity'))).toContain('WHERE tl.tag_id=10000099');
+});
+
+it('budget names follow the old GetTradeCodeName: trade-Labor / -Materials / -Owned Equipment / -Rented Equipment / -Other, with fallbacks', () => {
+  const trades = tradeNameTable([{ TradeCode: '93', display_name: 'Drywall' }]);
+  expect(['931', '932', '934', '935', '937'].map((c) => budgetName(c, trades))).toEqual(['Drywall-Labor', 'Drywall-Materials', 'Drywall-Owned Equipment', 'Drywall-Rented Equipment', 'Drywall-Other']);
+  expect(budgetName('915', trades)).toBe('EQUIPMENT: Rented Equipment');
+  expect(budgetName('897', trades)).toBe('SMALL TOOLS: Other');
+  expect(budgetName('551', trades)).toBe('Unknown Code');
 });
