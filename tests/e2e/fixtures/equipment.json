@@ -1,0 +1,14 @@
+[
+  {
+    "Id": 1,
+    "description": "Scissor Lift"
+  },
+  {
+    "Id": 2,
+    "description": "Welding Machine"
+  },
+  {
+    "Id": 3,
+    "description": "Boom Lift"
+  }
+]

@@ -1,4 +1,4 @@
-// Full user journey against a stack running with EMACHINE_MODE=fixtures.
+// Editing an eMachine tag end to end, against the mock eMachine in helpers.mjs.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { BASE_URL, VIEWPORTS, openPage, pickOption } from './helpers.mjs';
@@ -8,65 +8,57 @@ before(async () => {
   ctx = await openPage(VIEWPORTS.phone);
 });
 after(async () => {
-  assert.deepEqual(ctx.errors, [], 'no uncaught page errors');
+  assert.deepEqual(ctx.errors, [], 'no page errors or unmatched queries');
   await ctx.browser.close();
 });
 
-test('lists eMachine tags', async () => {
+test('lists tags from eMachine', async () => {
   const { page } = ctx;
   await page.goto(BASE_URL);
-  await page.getByText('D4355-1').waitFor();
-  assert.ok(await page.getByText('Dragoneer 1 Letterman').first().isVisible());
+  await page.locator('.tag-card', { hasText: 'D4355-1' }).waitFor();
+  assert.ok(await page.getByText('Databricks').isVisible());
 });
 
-test('creates, costs, signs and submits a tag', async () => {
+test('opens a tag with its cost lines', async () => {
   const { page } = ctx;
-  await page.getByRole('button', { name: 'Add Tag' }).click();
-  await pickOption(page, 'Job', /Dragoneer/);
-  await page.getByPlaceholder('What changed and why').fill('Add door frame at grid C-4');
-  await page.getByRole('button', { name: 'Save' }).click();
-  await page.getByText('Saved').waitFor();
-  await page.waitForURL(/\/tags\/\d+\/details/);
-  const tagNumber = await page.locator('.detail-head h2').innerText();
-  assert.match(tagNumber, /NEW-\d+/);
-
+  await page.locator('.tag-card', { hasText: 'D4355-1' }).click();
   await page.getByRole('link', { name: 'Cost' }).click();
-  await page.getByRole('button', { name: 'Add Labor' }).click();
-  await pickOption(page, 'Resource', 'Jacob S Adams');
-  await pickOption(page, 'Trade', 'Framing');
-  await page.getByLabel('Regular').fill('7');
+  assert.equal(await page.getByLabel('Regular').inputValue(), '7.00');
   await page.getByRole('link', { name: 'Expenses' }).click();
-  await page.getByRole('button', { name: 'Add Expense' }).click();
-  await pickOption(page, 'Expense', 'Parking');
-  assert.equal(await page.getByLabel('Amount').inputValue(), '35.00', 'default amount from expenses_master');
+  assert.equal(await page.getByLabel('Amount').inputValue(), '35.00');
+  // Saved lines can't be removed until eMachine's delete API is wired.
+  assert.ok(await page.getByRole('button', { name: 'Remove expense' }).isDisabled());
+});
+
+test('saves only what changed, in eMachine’s format', async () => {
+  const { page, writes } = ctx;
+  await page.getByLabel('Amount').fill('40');
+  await page.getByRole('link', { name: 'Labor' }).click();
+  await page.getByRole('button', { name: 'Add Labor' }).click();
+  await pickOption(page, 'Resource', 'Sean Hubert');
+  await pickOption(page, 'Trade', 'Taping');
+  await page.getByLabel('Regular').last().fill('2');
+  await page.getByRole('link', { name: 'Details' }).click();
+  await page.getByPlaceholder('What changed and why').fill('add door and frame');
   await page.getByRole('button', { name: 'Save' }).click();
-  await page.getByText('Saved').waitFor();
+  await page.getByText('Saved', { exact: true }).waitFor();
 
+  assert.deepEqual(writes, [
+    { table: 'tags', fields: { Id: '9001', description: 'add door and frame' } },
+    { table: 'tag_labor', fields: { tag_id: '9001', employee_id: '102', employee_name: 'Sean Hubert', trade_id: '3', regularhours: '2.00', overtime: '0.00', doubletime: '0.00' } },
+    { table: 'tag_other_expenses', fields: { Id: '10000135', qty: '40.00' } },
+  ]);
+});
+
+test('features without a known eMachine API are clearly disabled', async () => {
+  const { page } = ctx;
+  await page.getByRole('link', { name: 'Files' }).click();
+  await page.getByText('isn’t connected to eMachine yet').first().waitFor();
   await page.getByRole('link', { name: 'Sign' }).click();
-  await page.getByRole('combobox', { name: 'Approver' }).fill('Sean Hubert');
-  await page.keyboard.press('Enter');
-  const box = await page.locator('canvas.sig-pad').boundingBox();
-  await page.mouse.move(box.x + 30, box.y + 100);
-  await page.mouse.down();
-  for (let i = 0; i < 15; i++) await page.mouse.move(box.x + 30 + i * 14, box.y + 100 + Math.sin(i) * 30);
-  await page.mouse.up();
-  await page.getByRole('button', { name: 'Submit' }).click();
-  await page.locator('.detail-head .status-pill', { hasText: 'Signed' }).waitFor();
-  assert.ok(await page.getByText('can no longer be edited').isVisible());
-});
-
-test('the signed tag shows in the list after a reload', async () => {
-  const { page } = ctx;
+  assert.ok(await page.getByRole('button', { name: 'Submit' }).isDisabled());
   await page.goto(BASE_URL);
-  const card = page.locator('.tag-card', { hasText: 'Add door frame at grid C-4' }).first(); // newest first
-  await card.waitFor();
-  assert.equal(await card.locator('.status-pill').innerText(), 'Signed');
-});
-
-test('blocks submitting an incomplete tag', async () => {
-  const { page } = ctx;
-  await page.goto(`${BASE_URL}/tags/new/sign`);
-  await page.getByRole('button', { name: 'Submit' }).click();
-  await page.getByText('Select a job on the Details tab').waitFor();
-  await page.waitForURL(/\/details$/);
+  const addTag = page.getByRole('button', { name: 'Add Tag' });
+  assert.ok(await addTag.isDisabled(), 'Add Tag is marked disabled');
+  await addTag.click({ force: true }); // still explains why when tapped
+  await page.getByText('Creating new tags in eMachine isn’t connected yet').waitFor();
 });

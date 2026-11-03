@@ -1,46 +1,17 @@
-# Base stack: API (SQLite) + web app behind nginx on http://localhost:8080
+# The web app behind nginx on http://localhost:8080. nginx serves the built app
+# and forwards /datamodel/ to eMachine. There is no backend or database.
 #   docker compose up -d --build
-# Overlays: docker-compose.dev.yml (hot reload), docker-compose.prod.yml (PostgreSQL).
+# Saving to eMachine is off unless VITE_EMACHINE_WRITES=true at build time.
 name: stockham-tags
 
 services:
-  backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    image: stockham-tags-backend:${APP_VERSION:-1.0.0}
-    env_file:
-      - path: .env
-        required: false
-    environment:
-      DATABASE_URL: ${DATABASE_URL:-sqlite:////data/stockham-tags.db}
-      ATTACHMENTS_DIR: /data/attachments
-      EMACHINE_MODE: ${EMACHINE_MODE:-live}
-      EMACHINE_API_TOKEN: ${EMACHINE_API_TOKEN:-}
-      AUTH_MODE: ${AUTH_MODE:-none}
-      AUTH_TOKENS: ${AUTH_TOKENS:-}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
-    volumes:
-      - app-data:/data
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/ready"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-    restart: unless-stopped
-
-  frontend:
+  web:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    image: stockham-tags-frontend:${APP_VERSION:-1.0.0}
+      args:
+        VITE_EMACHINE_WRITES: ${VITE_EMACHINE_WRITES:-false}
+    image: stockham-tags-web:${APP_VERSION:-1.0.0}
     ports:
       - "${WEB_PORT:-8080}:8080"
-    depends_on:
-      backend:
-        condition: service_healthy
     restart: unless-stopped
-
-volumes:
-  app-data:

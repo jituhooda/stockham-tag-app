@@ -1,9 +1,0 @@
-{
-  "name": "ck_tag_materials_length",
-  "entity": "MaterialLine",
-  "type": "check",
-  "fields": [
-    "length"
-  ],
-  "expression": "length >= 0"
-}

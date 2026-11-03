@@ -1,35 +1,48 @@
 import { useState } from 'react';
+import { OpenInChrome } from '../components/OpenInChrome';
 import { Logo } from '../components/ui';
+import { keycloakEnabled, startLogin, takeLoginError } from '../lib/keycloak';
 import { useApp } from '../state/AppContext';
 
-/** Shown when the backend runs with authMode "token" and we have no valid token. */
+/** Sign in through Keycloak. Pasting a token is offered only if Keycloak isn't configured (auth in integrations.config.json). */
 export function SignInPage() {
-  const { signIn, status } = useApp();
+  const { signIn } = useApp();
   const [token, setToken] = useState('');
+  const [error] = useState(takeLoginError);
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const paste = !keycloakEnabled();
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const login = async () => {
     setBusy(true);
-    setFailed(false);
-    await signIn(token);
-    setBusy(false);
-    setFailed(true); // if sign-in worked this page is already gone
+    try {
+      await startLogin();
+    } catch {
+      setBusy(false);
+    }
   };
 
   return (
     <div className="signin">
-      <form className="signin__card" onSubmit={submit}>
+      <form className="signin__card" onSubmit={(e) => { e.preventDefault(); if (paste) signIn(token); else login(); }}>
         <Logo className="signin__logo" />
         <h1>Sign in</h1>
-        <p className="muted">Enter the access token your administrator gave you.</p>
-        <label className="field">
-          <span className="field-label">Access token</span>
-          <input className="input" type="password" autoComplete="current-password" value={token} onChange={(e) => setToken(e.target.value)} required />
-        </label>
-        {failed && status === 'signed-out' && <p className="error-text">That token wasn’t accepted.</p>}
-        <button className="btn btn--dark btn--block" disabled={busy || !token.trim()}>{busy ? 'Checking…' : 'Sign in'}</button>
+        {error && <p className="banner banner--error" role="alert">{error}</p>}
+        {paste ? (
+          <>
+            <p className="muted">Paste your eMachine access token. It stays in this browser only.</p>
+            <label className="field">
+              <span className="field-label">Access token</span>
+              <input className="input" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} required />
+            </label>
+            <button className="btn btn--dark btn--block" disabled={!token.trim()}>Sign in</button>
+          </>
+        ) : (
+          <>
+            <p className="muted">Sign in with your Stockham account.</p>
+            <button className="btn btn--dark btn--block" disabled={busy}>{busy ? 'Opening…' : 'Sign in'}</button>
+          </>
+        )}
+        <OpenInChrome className="signin__chrome" />
       </form>
     </div>
   );

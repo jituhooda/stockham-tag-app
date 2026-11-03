@@ -1,9 +1,0 @@
-{
-  "name": "ix_tags_job_no",
-  "entity": "Tag",
-  "table": "tags",
-  "fields": [
-    "job_no"
-  ],
-  "unique": false
-}

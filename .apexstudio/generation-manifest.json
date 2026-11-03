@@ -15,6 +15,10 @@
     {
       "type": "structure",
       "description": "ApexStudio export layout"
+    },
+    {
+      "type": "api",
+      "description": "Requests captured from the existing eMachine Tags app (Cost screen reads and saves)"
     }
   ],
   "outputs": [
@@ -24,33 +28,10 @@
       "regenerate": false
     },
     {
-      "path": "backend/",
-      "kind": "application",
-      "regenerate": false
-    },
-    {
-      "path": "api/openapi.json",
-      "kind": "contract",
-      "regenerate": true,
-      "command": "cd backend && uv run python -m apexapp.utils.export_openapi"
-    },
-    {
       "path": "api/openapi.yaml",
       "kind": "contract",
-      "regenerate": true,
-      "command": "cd backend && uv run python -m apexapp.utils.export_openapi"
-    },
-    {
-      "path": "api/postman-collection.json",
-      "kind": "contract",
-      "regenerate": true,
-      "command": "cd backend && uv run python -m apexapp.utils.export_openapi"
-    },
-    {
-      "path": "database/schema/",
-      "kind": "schema-snapshot",
-      "regenerate": true,
-      "command": "scripts/db-verify.sh --dump"
+      "regenerate": false,
+      "note": "Hand-maintained description of the eMachine endpoints the app calls"
     },
     {
       "path": ".apexstudio/artifact-hashes.json",
@@ -61,10 +42,9 @@
   ],
   "handEdited": [
     "frontend/",
-    "backend/",
-    "data-model/",
     "config/",
-    "database/migrations/",
-    "docs/"
+    "api/",
+    "docs/",
+    "tests/e2e/"
   ]
 }

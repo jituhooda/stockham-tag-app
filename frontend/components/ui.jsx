@@ -1,28 +1,18 @@
 /**
  * Shared UI building blocks: buttons, status pills, the searchable select,
- * toasts, the signature pad and the Stockham logo.
+ * toasts, the signature pad and the Crew Tag logo.
  */
+import { createPortal } from 'react-dom';
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { IconCheckCircle, IconChevronDown, IconSave, IconSearch } from './icons';
+import { IconCheck, IconCheckCircle, IconChevronDown, IconClose, IconSave, IconSearch } from './icons';
 
 export const cx = (...c) => c.filter(Boolean).join(' ');
 
 /* ---------------------------------------------------------------- Logo */
 
-/** Stockham Construction wordmark (script name over a red-ruled block caption). */
+/** The Crew Tag logo (public/crew-tag-logo.png). */
 export function Logo({ className }) {
-  return (
-    <svg className={className} viewBox="0 0 120 52" role="img" aria-label="Stockham Construction">
-      <text x="4" y="22" fontFamily="'Brush Script MT','Segoe Script',cursive" fontStyle="italic" fontSize="22" fill="#1d1d1d" transform="rotate(-8 30 20)">
-        Stockham
-      </text>
-      <rect x="2" y="30" width="116" height="2" fill="#c0282d" />
-      <text x="60" y="42" fontFamily="'Arial Black',Arial,sans-serif" fontWeight="900" fontSize="11" letterSpacing="0.5" fill="#1d1d1d" textAnchor="middle">
-        CONSTRUCTION
-      </text>
-      <rect x="2" y="45" width="116" height="4" fill="#c0282d" />
-    </svg>
-  );
+  return <img className={cx('logo-img', className)} src="/crew-tag-logo.png" alt="Crew Tag" width="512" height="512" draggable="false" />;
 }
 
 /* ---------------------------------------------------------------- StatusPill */
@@ -38,15 +28,20 @@ export function ActionBar({ children }) {
   return <div className="action-bar">{children}</div>;
 }
 
+/** A small spinning ring for a button that is waiting on eMachine. It keeps turning under "reduce motion" (it is the only sign of progress). */
+const ButtonSpinner = () => <span className="btn__spinner" aria-hidden="true" />;
+
 export const SaveButton = ({ onClick, disabled, busy }) => (
-  <button className="btn btn--dark" onClick={onClick} disabled={disabled || busy}>
-    <IconSave size={20} /> {busy ? 'Saving…' : 'Save'}
+  <button className="btn btn--dark" onClick={onClick} disabled={disabled || busy} aria-busy={busy || undefined}>
+    {busy ? <ButtonSpinner /> : <IconSave size={20} />} {busy ? 'Saving…' : 'Save'}
   </button>
 );
 
-export const SubmitButton = ({ onClick, disabled, busy, label = 'Submit' }) => (
-  <button className="btn btn--dark btn--right" onClick={onClick} disabled={disabled || busy}>
-    <IconCheckCircle size={22} /> {busy ? 'Working…' : label}
+/** `progress` is what the work is doing right now ("Sending…"), shown while busy. */
+export const SubmitButton = ({ onClick, disabled, busy, progress, label = 'Submit' }) => (
+  <button className={cx('btn btn--dark btn--right', busy && 'is-busy')} onClick={onClick} disabled={disabled || busy} aria-busy={busy || undefined}>
+    {busy ? <ButtonSpinner /> : <IconCheckCircle size={22} />}
+    <span aria-live="polite">{busy ? progress || 'Working…' : label}</span>
   </button>
 );
 
@@ -89,7 +84,10 @@ export function SearchSelect({
 
   useEffect(() => setActive(0), [query]);
 
-  const choose = (o) => {
+  const choose = (o, e) => {
+    // Inside a <label>, the click would be forwarded to the input, refocusing it and reopening the list.
+    e?.preventDefault();
+    e?.stopPropagation();
     onChange({ value: o.value, label: o.label, sub: o.sub });
     setOpen(false);
     setQuery('');
@@ -151,7 +149,7 @@ export function SearchSelect({
               className={cx('combo__opt', i === active && 'is-active', o.label === value && 'is-selected')}
               onPointerEnter={() => setActive(i)}
               onPointerDown={(e) => e.preventDefault()}
-              onClick={() => choose(o)}
+              onClick={(e) => choose(o, e)}
             >
               {o.custom ? <>Use “<strong>{o.label}</strong>”</> : o.label}
               {o.sub && <span className="combo__sub">{o.sub}</span>}
@@ -160,6 +158,72 @@ export function SearchSelect({
         </ul>
       )}
     </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Overlay */
+
+/**
+ * Draws pop-ups (dialogs, menus, the photo editor and viewer) straight on <body>. Inside the page layout they
+ * would be stuck under sticky bars: the tab area is its own stacking layer, so no z-index could lift them above it.
+ */
+export function Overlay({ children }) {
+  return createPortal(children, document.body);
+}
+
+/* ---------------------------------------------------------------- Confirm */
+
+/** Centered yes/no question with ✗ and ✓ (Esc cancels). `onConfirm` may be async; the dialog waits for it. */
+export function ConfirmDialog({ text, onCancel, onConfirm }) {
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && !busy && onCancel();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [busy, onCancel]);
+  const yes = async () => {
+    setBusy(true);
+    try {
+      await onConfirm();
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Overlay>
+    <div className="dialog-backdrop" onPointerDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
+      <div className="dialog dialog--confirm" role="alertdialog" aria-modal="true" aria-label={text} aria-busy={busy}>
+        <p className="dialog__text">{text}</p>
+        <div className="dialog__actions">
+          <button className="dialog__btn dialog__btn--no" aria-label="No" disabled={busy} onClick={onCancel}><IconClose size={36} /></button>
+          <button className="dialog__btn dialog__btn--yes" aria-label="Yes, delete" disabled={busy} onClick={yes}>
+            {busy ? <span className="dialog__spinner" role="status" aria-label="Deleting" /> : <IconCheck size={36} />}
+          </button>
+        </div>
+      </div>
+    </div>
+    </Overlay>
+  );
+}
+
+/* ---------------------------------------------------------------- Alert */
+
+/** Centered message with a single OK button (Esc also closes it). */
+export function AlertDialog({ text, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <Overlay>
+      <div className="alert-backdrop">
+        <div className="alert" role="alertdialog" aria-modal="true" aria-label="Notice">
+          <p>{text}</p>
+          <button className="alert__ok" autoFocus onClick={onClose}>OK</button>
+        </div>
+      </div>
+    </Overlay>
   );
 }
 

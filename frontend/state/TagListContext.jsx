@@ -6,7 +6,6 @@ const TagListContext = createContext(null);
 /** The tag list, shared so the detail pane can refresh it after a save. */
 export function TagListProvider({ children }) {
   const [items, setItems] = useState([]);
-  const [warnings, setWarnings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const inflight = useRef(null);
@@ -18,9 +17,7 @@ export function TagListProvider({ children }) {
     setLoading(true);
     setError('');
     try {
-      const data = await apexApi.tags.list(ctrl.signal);
-      setItems(data.items);
-      setWarnings(data.warnings || []);
+      setItems(await apexApi.tags.list(ctrl.signal));
     } catch (e) {
       if (!ctrl.signal.aborted) setError(e.message);
     } finally {
@@ -33,7 +30,7 @@ export function TagListProvider({ children }) {
     return () => inflight.current?.abort();
   }, [refresh]);
 
-  const value = useMemo(() => ({ items, warnings, loading, error, refresh }), [items, warnings, loading, error, refresh]);
+  const value = useMemo(() => ({ items, loading, error, refresh }), [items, loading, error, refresh]);
   return <TagListContext.Provider value={value}>{children}</TagListContext.Provider>;
 }
 

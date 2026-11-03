@@ -1,16 +1,19 @@
 import { Outlet, useMatch } from 'react-router-dom';
 import { Logo } from '../components/ui';
+import { useLayout } from '../hooks/useLayout';
 import { TagListPage } from '../pages/TagListPage';
 
 /**
- * Phones show either the list or a tag. From 1024px wide the list stays on the
- * left and the open tag fills the right (see assets/styles.css).
+ * Phone: one pane - the tag list, or the open tag full screen.
+ * Tablet / desktop: the list stays on the left and the open tag fills the right.
  */
 export function AppShell() {
+  const { layout, split } = useLayout();
   const inTag = !!useMatch('/tags/*');
+  const classes = ['shell', `shell--${layout}`, split ? 'shell--split' : inTag ? 'shell--show-detail' : 'shell--show-list'];
   return (
-    <div className={`shell${inTag ? ' shell--detail' : ''}`}>
-      <aside className="shell__list">
+    <div className={classes.join(' ')} data-layout={layout}>
+      <aside className="shell__list" aria-label="Tags">
         <TagListPage />
       </aside>
       <main className="shell__detail">

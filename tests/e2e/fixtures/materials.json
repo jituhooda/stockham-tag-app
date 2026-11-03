@@ -1,0 +1,18 @@
+[
+  {
+    "Id": 1,
+    "description": "wood door"
+  },
+  {
+    "Id": 2,
+    "description": "hollow metal frame"
+  },
+  {
+    "Id": 3,
+    "description": "5/8\" type X drywall"
+  },
+  {
+    "Id": 4,
+    "description": "3-5/8\" metal stud"
+  }
+]

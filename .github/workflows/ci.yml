@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-export:
+    name: Export structure and hashes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install --quiet pyyaml
+      - run: scripts/validate-export.sh
+
+  frontend:
+    name: Frontend tests and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    name: Browser end-to-end (mock eMachine)
+    runs-on: ubuntu-latest
+    needs: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build against the mock eMachine (never the real one)
+        working-directory: frontend
+        env:
+          VITE_EMACHINE_BASE_URL: https://emachine.invalid
+          VITE_EMACHINE_TOKEN: e2e
+          VITE_EMACHINE_WRITES: "true"
+        run: npm ci && npm run build
+      - name: Install Playwright
+        working-directory: tests/e2e
+        run: npm install && npx playwright install --with-deps chromium
+      - name: Serve the build
+        working-directory: frontend
+        run: |
+          nohup npx vite preview --port 4173 > "$RUNNER_TEMP/web.log" 2>&1 &
+          curl -fsS --retry 15 --retry-delay 2 --retry-connrefused http://localhost:4173/ > /dev/null
+      - name: Run browser tests
+        working-directory: tests/e2e
+        run: npm test
+      - name: Server log
+        if: failure()
+        run: cat "$RUNNER_TEMP/web.log"
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate compose files
+        run: |
+          docker compose -f docker-compose.yml config -q
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml config -q
+      - name: Build image
+        run: docker build -f frontend/Dockerfile -t stockham-tags-web:ci .
+      - name: Check nginx config and serve the app
+        run: |
+          docker run --rm stockham-tags-web:ci nginx -t
+          docker run -d --name web -p 8080:8080 stockham-tags-web:ci
+          scripts/health-check.sh --url http://localhost:8080 --wait 30
