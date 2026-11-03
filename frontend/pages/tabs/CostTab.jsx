@@ -5,7 +5,7 @@ import { NewEquipmentDialog } from '../../components/NewEquipmentDialog';
 import { NewMaterialDialog } from '../../components/NewMaterialDialog';
 import { apexApi } from '../../lib/apexApi';
 import { WritesDisabledError } from '../../lib/apexHttp';
-import { ActionBar, ConfirmDialog, SaveButton, SearchSelect, useToast } from '../../components/ui';
+import { ActionBar, ConfirmDialog, SaveButton, SearchSelect, cx, useToast } from '../../components/ui';
 import { useMasterData } from '../../hooks/useMasterData';
 import { tagPath } from '../../routes/router';
 import { emptyEquipment, emptyExpense, emptyLabor, emptyMaterial } from '../../services/tagModel';
@@ -141,6 +141,7 @@ function useOptions(items) {
 
 function LaborSection(props) {
   const { readOnly } = props;
+  const premium = !!props.tag.isPremium; // OT - Premium Time Only: no regular hours, just overtime and double time
   const employeeList = useMasterData('employees');
   const tradeList = useMasterData('trades');
   const { lines, add, change, remove, confirm } = useLines(props, 'labor', emptyLabor);
@@ -190,8 +191,8 @@ function LaborSection(props) {
             </label>
             <DeleteBtn hidden={readOnly} label="Remove labor line" onClick={() => remove(l.key)} />
           </div>
-          <div className="line-card__nums">
-            <NumField label="Regular" value={l.regular} readOnly={readOnly} onChange={(v) => change(l.key, { regular: v })} />
+          <div className={cx('line-card__nums', premium && 'line-card__nums--two')}>
+            {!premium && <NumField label="Regular" value={l.regular} readOnly={readOnly} onChange={(v) => change(l.key, { regular: v })} />}
             <NumField label="Overtime" value={l.overtime} readOnly={readOnly} onChange={(v) => change(l.key, { overtime: v })} />
             <NumField label="DoubleTime" placeholder="Double" value={l.doubleTime} readOnly={readOnly} onChange={(v) => change(l.key, { doubleTime: v })} />
           </div>

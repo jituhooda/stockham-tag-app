@@ -234,7 +234,9 @@ export function planSave(form, saved) {
 
   for (const [key, { table, fields }] of Object.entries(LINE_TABLES)) {
     const before = new Map(saved[key].filter((l) => l.id).map((l) => [l.id, l]));
-    for (const line of form[key]) {
+    // OT - Premium Time Only has no regular hours: whatever was typed before switching is saved as zero.
+    const current = form.isPremium && key === 'labor' ? form[key].map((l) => ({ ...l, regular: '' })) : form[key];
+    for (const line of current) {
       if (line.id) {
         const prev = before.get(line.id);
         const diff = prev ? changed(fields(line), fields(prev)) : fields(line);

@@ -140,3 +140,19 @@ it('escapes quotes and regex characters in the job number', async () => {
   const sql = atob(new URL(globalThis.fetch.mock.calls[0][0], 'http://x').searchParams.get('query'));
   expect(sql).toContain(String.raw`JobNo = 'A.1''' AND tag_number REGEXP '^A\\.1''-[0-9]+$'`);
 });
+
+it('OT - Premium Time Only saves no regular hours (they are zeroed), and keeps overtime / double time', () => {
+  const premium = { ...saved, isPremium: true, labor: [{ ...labor, regular: '7.00', overtime: '4.00' }] };
+  const [req] = planSave(premium, { ...saved, isPremium: true });
+  expect(Object.fromEntries(new URLSearchParams(req.body))).toEqual({ Id: '10000104', regularhours: '0.00' });
+  const added = { ...emptyLabor(), employeeId: '1', employeeName: 'A', tradeId: '2', regular: '8', overtime: '3', doubleTime: '2' };
+  const [ins] = planSave({ ...premium, labor: [added] }, { ...saved, isPremium: true, labor: [] });
+  expect(Object.fromEntries(new URLSearchParams(ins.body))).toMatchObject({ regularhours: '0.00', overtime: '3.00', doubletime: '2.00' });
+});
+
+it('switching a saved tag to OT - Premium Time Only saves IsPremium=1 (and back saves 0)', () => {
+  const [on] = planSave({ ...saved, isPremium: true }, saved);
+  expect(Object.fromEntries(new URLSearchParams(on.body))).toEqual({ Id: '10000113', IsPremium: '1' });
+  const [off] = planSave(saved, { ...saved, isPremium: true });
+  expect(Object.fromEntries(new URLSearchParams(off.body))).toEqual({ Id: '10000113', IsPremium: '0' });
+});
