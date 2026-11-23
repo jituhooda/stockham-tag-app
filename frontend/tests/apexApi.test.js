@@ -16,6 +16,7 @@ const saved = { ...header, labor: [labor], materials: [material], equipment: [],
 it('maps captured columns', () => {
   expect(labor).toMatchObject({ id: '10000104', employeeId: '10004953', tradeId: '10000338', trade: 'Taping', regular: '7.00', overtime: '4.00' });
   expect(material).toMatchObject({ id: '10000126', materialId: '10000059', qty: '2', length: '3' });
+  expect(materialFromRow({ length: '5.4 cm' }).length).toBe('5.4 cm');
   expect(expense).toMatchObject({ id: '10000135', expenseId: '4', amount: '35.00', description: 'Parking' });
 });
 
@@ -66,11 +67,11 @@ it('lists materials and equipment by description, and saves the row Id as materi
   expect(mat).toMatchObject({ id: '10000059', label: 'wood door' });
   expect(eqp).toMatchObject({ id: '10000001', label: 'Boom Lift' });
 
-  const material = { ...emptyMaterial(), materialId: mat.id, description: mat.label, qty: '2', length: '3' };
+  const material = { ...emptyMaterial(), materialId: mat.id, description: mat.label, qty: '2', length: ' 5\' 4" ' };
   const equipment = { ...emptyEquipment(), equipmentId: eqp.id, description: eqp.label, qty: '1' };
   const reqs = planSave({ ...saved, materials: [...saved.materials, material], equipment: [equipment] }, saved);
   const bodies = Object.fromEntries(reqs.map((r) => [r.table, Object.fromEntries(new URLSearchParams(r.body))]));
-  expect(bodies.tag_materials).toEqual({ tag_id: '10000113', material_id: '10000059', qty: '2', length: '3' });
+  expect(bodies.tag_materials).toEqual({ tag_id: '10000113', material_id: '10000059', qty: '2', length: '5\' 4"' }); // length is free text
   expect(bodies.tag_equipment).toEqual({ tag_id: '10000113', equipment_id: '10000001', qty: '1' });
 });
 

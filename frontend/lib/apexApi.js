@@ -81,7 +81,7 @@ export const materialFromRow = (r) => ({
   materialId: text(r, 'material_id'),
   description: text(r, 'description'),
   qty: plain(pick(r, 'qty')),
-  length: plain(pick(r, 'length')),
+  length: text(r, 'length'), // free text: 5' 4", 5.4 cm
 });
 
 export const equipmentFromRow = (r) => ({
@@ -115,7 +115,7 @@ export const LINE_TABLES = {
       regularhours: n2(l.regular), overtime: n2(l.overtime), doubletime: n2(l.doubleTime),
     }),
   },
-  materials: { table: 'tag_materials', fields: (l) => ({ material_id: l.materialId, qty: nPlain(l.qty), length: l.length === '' ? undefined : nPlain(l.length) }) },
+  materials: { table: 'tag_materials', fields: (l) => ({ material_id: l.materialId, qty: nPlain(l.qty), length: String(l.length ?? '').trim() || undefined }) },
   equipment: { table: 'tag_equipment', fields: (l) => ({ equipment_id: l.equipmentId, qty: nPlain(l.qty) }) },
   issues: { table: 'tag_issues', fields: (l) => ({ issue_id: l.issueId }) },
   expenses: { table: 'tag_other_expenses', fields: (l) => ({ expenses_id: l.expenseId, expenses_description: l.description, qty: n2(l.amount) }) },

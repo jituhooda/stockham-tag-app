@@ -134,6 +134,16 @@ function NumField({ label, value, onChange, readOnly, step = '0.25', placeholder
   );
 }
 
+function TextField({ label, value, onChange, readOnly, placeholder = label }) {
+  return (
+    <label className="field">
+      <span className="field-label">{label}</span>
+      <input className="input" type="text" autoComplete="off" enterKeyHint="next" placeholder={placeholder}
+        value={value} disabled={readOnly} maxLength={100} onChange={(e) => onChange(e.target.value)} />
+    </label>
+  );
+}
+
 /** Normalised master items ({ id, label }) -> select options. */
 function useOptions(items) {
   return useMemo(() => items.map((i) => ({ value: String(i.id ?? i.label), label: i.label })), [items]);
@@ -285,7 +295,7 @@ function MaterialSection(props) {
           </div>
           <div className="line-card__nums">
             <NumField label="Qty" value={l.qty} readOnly={readOnly} step="1" onChange={(v) => change(l.key, { qty: v })} />
-            <NumField label="Length" value={l.length} readOnly={readOnly} step="1" onChange={(v) => change(l.key, { length: v })} />
+            <TextField label="Length" value={l.length} readOnly={readOnly} placeholder={'e.g. 5\' 4" or 5.4 cm'} onChange={(v) => change(l.key, { length: v })} />
           </div>
         </div>
       ))}
