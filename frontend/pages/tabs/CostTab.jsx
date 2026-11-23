@@ -5,10 +5,10 @@ import { NewEquipmentDialog } from '../../components/NewEquipmentDialog';
 import { NewMaterialDialog } from '../../components/NewMaterialDialog';
 import { apexApi } from '../../lib/apexApi';
 import { WritesDisabledError } from '../../lib/apexHttp';
-import { ActionBar, ConfirmDialog, SaveButton, SearchSelect, useToast } from '../../components/ui';
+import { ActionBar, ConfirmDialog, SaveButton, SearchSelect, cx, useToast } from '../../components/ui';
 import { useMasterData } from '../../hooks/useMasterData';
 import { tagPath } from '../../routes/router';
-import { emptyEquipment, emptyExpense, emptyLabor, emptyMaterial } from '../../services/tagModel';
+import { emptyEquipment, emptyExpense, emptyLabor, emptyMaterial, isOtherExpense } from '../../services/tagModel';
 
 const SUBS = [
   { key: 'labor', label: 'Labor' },
@@ -151,7 +151,7 @@ function useOptions(items) {
 
 function LaborSection(props) {
   const { readOnly } = props;
-  const premium = !!props.tag.isPremium; // OT - Premium Time Only: no regular hours, just overtime
+  const premium = !!props.tag.isPremium; // OT - Premium Time Only: no regular hours, just overtime and double time
   const employeeList = useMasterData('employees');
   const tradeList = useMasterData('trades');
   const { lines, add, change, remove, confirm } = useLines(props, 'labor', emptyLabor);
@@ -201,9 +201,10 @@ function LaborSection(props) {
             </label>
             <DeleteBtn hidden={readOnly} label="Remove labor line" onClick={() => remove(l.key)} />
           </div>
-          <div className="line-card__nums line-card__nums--two">
+          <div className={cx('line-card__nums', premium && 'line-card__nums--two')}>
             {!premium && <NumField label="Regular" value={l.regular} readOnly={readOnly} onChange={(v) => change(l.key, { regular: v })} />}
             <NumField label="Overtime" value={l.overtime} readOnly={readOnly} onChange={(v) => change(l.key, { overtime: v })} />
+            <NumField label="DoubleTime" placeholder="Double" value={l.doubleTime} readOnly={readOnly} onChange={(v) => change(l.key, { doubleTime: v })} />
           </div>
         </div>
       ))}
@@ -325,13 +326,16 @@ function ExpenseSection(props) {
         <div className="expense-row" key={l.key}>
           <SearchSelect
             className="grow"
-            value={l.description}
+            value={l.type || l.description}
             options={options}
             loading={list.loading}
             disabled={readOnly}
             ariaLabel="Expense"
             placeholder="Expense"
-            onChange={(o) => change(l.key, { expenseId: o.value, description: o.label, amount: l.amount || defaultAmount(o.label) })}
+            onChange={(o) => change(l.key, {
+              expenseId: o.value, type: o.label, amount: l.amount || defaultAmount(o.label),
+              description: isOtherExpense(o.label) ? (isOtherExpense(l.type) ? l.description : '') : o.label,
+            })}
           />
           <input
             className="input amount"
@@ -350,6 +354,19 @@ function ExpenseSection(props) {
             }}
           />
           <DeleteBtn hidden={readOnly} label="Remove expense" onClick={() => remove(l.key)} />
+          {isOtherExpense(l.type) && (
+            <input
+              className="input expense-other"
+              type="text"
+              autoComplete="off"
+              maxLength={200}
+              aria-label="Other expense description"
+              placeholder="Describe the expense, e.g. Flat tire fix"
+              value={l.description}
+              disabled={readOnly}
+              onChange={(e) => change(l.key, { description: e.target.value })}
+            />
+          )}
         </div>
       ))}
       {lines.length > 0 && (

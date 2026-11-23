@@ -6,6 +6,8 @@
 import { apexConfig } from '../lib/apexConfig';
 import { DEFAULT_SEND_REASON } from './validation';
 
+export { isOtherExpense } from './validation';
+
 let seq = 0;
 export const lineKey = () => `l${Date.now().toString(36)}${(seq++).toString(36)}`;
 
@@ -24,7 +26,7 @@ export const plain = (n) => (n == null || n === '' ? '' : String(Number(n)));
 export const emptyLabor = () => ({ key: lineKey(), id: '', employeeId: '', employeeName: '', tradeId: '', trade: '', regular: '', overtime: '', doubleTime: '' });
 export const emptyMaterial = () => ({ key: lineKey(), id: '', materialId: '', description: '', qty: '', length: '' });
 export const emptyEquipment = () => ({ key: lineKey(), id: '', equipmentId: '', description: '', qty: '' });
-export const emptyExpense = () => ({ key: lineKey(), id: '', expenseId: '', description: '', amount: '' });
+export const emptyExpense = () => ({ key: lineKey(), id: '', expenseId: '', type: '', description: '', amount: '' });
 
 /** The tag fields that come from a job row (master data). */
 export const jobFields = (j, fallbackEmail = '') => ({

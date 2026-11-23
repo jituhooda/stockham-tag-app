@@ -17,7 +17,10 @@ it('maps captured columns', () => {
   expect(labor).toMatchObject({ id: '10000104', employeeId: '10004953', tradeId: '10000338', trade: 'Taping', regular: '7.00', overtime: '4.00' });
   expect(material).toMatchObject({ id: '10000126', materialId: '10000059', qty: '2', length: '3' });
   expect(materialFromRow({ length: '5.4 cm' }).length).toBe('5.4 cm');
-  expect(expense).toMatchObject({ id: '10000135', expenseId: '4', amount: '35.00', description: 'Parking' });
+  expect(expense).toMatchObject({ id: '10000135', expenseId: '4', amount: '35.00', type: 'Parking', description: 'Parking' });
+  // "Other" shows the typed description instead of the type's name.
+  expect(expenseFromRow({ expenses_id: 10000041, expense_type_description: 'Other', expenses_description: 'Flat tire fix', qty: '20' }))
+    .toMatchObject({ type: 'Other', description: 'Flat tire fix' });
 });
 
 it('sends nothing when nothing changed', () => {
@@ -102,6 +105,8 @@ it('saves a new tag with exactly the fields the existing app sends', () => {
   expect(lines.tag_materials).toEqual({ tag_id: '10000114', material_id: '10000057', qty: '9', length: '9' });
   expect(lines.tag_equipment).toEqual({ tag_id: '10000114', equipment_id: '10000000', qty: '9' });
   expect(lines.tag_other_expenses).toEqual({ tag_id: '10000114', expenses_id: '10000032', expenses_description: 'Parking', qty: '9.00' });
+  const other = { ...empty, expenses: [{ ...emptyExpense(), expenseId: '10000041', type: 'Other', description: ' Flat tire fix ', amount: '20' }] };
+  expect(new URLSearchParams(planSave(other, empty)[0].body).get('expenses_description')).toBe('Flat tire fix');
 });
 
 it('sends IsPremium on a new tag only when it is premium', () => {

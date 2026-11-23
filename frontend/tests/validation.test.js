@@ -19,6 +19,11 @@ describe('submitProblems', () => {
     expect(p).toContain('Every labor line needs a resource');
     expect(p).toContain('Every labor line needs a trade');
   });
+  it('requires a typed description for an "Other" expense', () => {
+    const other = { expenseId: '10000041', type: 'Other', amount: '20' };
+    expect(submitProblems({ ...complete, expenses: [{ ...other, description: ' ' }] })).toEqual(['Describe each "Other" expense']);
+    expect(submitProblems({ ...complete, expenses: [{ ...other, description: 'Flat tire fix' }] })).toEqual([]);
+  });
 });
 
 it('saveProblems only blocks lines eMachine could not store', () => {

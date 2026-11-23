@@ -9,7 +9,7 @@ import { ApiError, deleteCloudFile, fileUrlFrom, insertedId, query, runDelete, r
 import { isoDate, labelOf, num, pick, text, truthy } from '../services/fields';
 import { EMAIL_RE } from '../services/validation';
 import { buildCostItems, buildSignedDocBody, rateTable, tradeNameTable } from './signedDoc';
-import { NEW_TAG_ID, fixed, isEditable, lineKey, newTag, plain } from '../services/tagModel';
+import { NEW_TAG_ID, fixed, isEditable, isOtherExpense, lineKey, newTag, plain } from '../services/tagModel';
 
 const dedupe = (items) => {
   const seen = new Set();
@@ -93,13 +93,17 @@ export const equipmentFromRow = (r) => ({
 });
 
 // eMachine keeps the expense amount in `qty`.
-export const expenseFromRow = (r) => ({
-  key: lineKey(),
-  id: text(r, 'Id'),
-  expenseId: text(r, 'expenses_id'),
-  description: text(r, 'expense_type_description', 'expenses_description'),
-  amount: fixed(pick(r, 'qty')),
-});
+export const expenseFromRow = (r) => {
+  const type = text(r, 'expense_type_description');
+  return {
+    key: lineKey(),
+    id: text(r, 'Id'),
+    expenseId: text(r, 'expenses_id'),
+    type,
+    description: isOtherExpense(type) || !type ? text(r, 'expenses_description') : type,
+    amount: fixed(pick(r, 'qty')),
+  };
+};
 
 /* ------------------------------------------------------------------ writes */
 
@@ -118,7 +122,7 @@ export const LINE_TABLES = {
   materials: { table: 'tag_materials', fields: (l) => ({ material_id: l.materialId, qty: nPlain(l.qty), length: String(l.length ?? '').trim() || undefined }) },
   equipment: { table: 'tag_equipment', fields: (l) => ({ equipment_id: l.equipmentId, qty: nPlain(l.qty) }) },
   issues: { table: 'tag_issues', fields: (l) => ({ issue_id: l.issueId }) },
-  expenses: { table: 'tag_other_expenses', fields: (l) => ({ expenses_id: l.expenseId, expenses_description: l.description, qty: n2(l.amount) }) },
+  expenses: { table: 'tag_other_expenses', fields: (l) => ({ expenses_id: l.expenseId, expenses_description: String(l.description ?? '').trim(), qty: n2(l.amount) }) },
 };
 
 /** How an issue is shown everywhere: "5 : Room has been completely dropped and punched". */
@@ -530,7 +534,7 @@ export const apexApi = {
         query('tradeNames', {}, signal),
       ]);
       // The Autodesk cost items with their estimated cost, worked out now (at Submit) from the rates in eMachine.
-      const costItems = buildCostItems(costRows.map((r) => ({ code: text(r, 'code'), name: text(r, 'name'), quantity: text(r, 'quantity') })), !!tag.isPremium, rateTable(rateRows), tradeNameTable(tradeRows.map((r) => ({ TradeCode: text(r, 'TradeCode'), display_name: text(r, 'display_name') }))));
+      const costItems = buildCostItems(costRows.map((r) => ({ code: text(r, 'code'), name: text(r, 'name'), quantity: text(r, 'quantity'), amount: text(r, 'amount') })), !!tag.isPremium, rateTable(rateRows), tradeNameTable(tradeRows.map((r) => ({ TradeCode: text(r, 'TradeCode'), display_name: text(r, 'display_name') }))));
       let issues = [];
       if (issueRows.length) {
         const facts = await apexApi.issues.options(tag.jobNo);

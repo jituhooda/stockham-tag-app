@@ -209,11 +209,11 @@ it('submitData reads the cost items and the rates, and returns the estimated cos
   globalThis.fetch = vi.fn().mockImplementation(async (url) => {
     const sql = sqlOf(url); seen.push(sql);
     if (sql.includes('FROM tag_labor_rates')) return json({ data: { records: [{ LaborType: 'NC_REG', Amount: '153.15' }, { LaborType: 'NC_OT', Amount: '208.33' }, { LaborType: 'NC_DT', Amount: '263.51' }] } });
-    if (sql.startsWith('SELECT code, name, quantity')) return json({ data: { records: [{ code: '931', name: 'Drywall Regular (Labor)', quantity: '2.0' }] } });
+    if (sql.startsWith('SELECT code, name, quantity')) return json({ data: { records: [{ code: '931', name: 'Drywall Regular (Labor)', quantity: '2.0', amount: null }, { code: '997', name: 'Parking (Other)', quantity: '1', amount: '45.00' }] } });
     return json({ data: { records: [] } });
   });
   const result = await apexApi.tags.submitData({ id: '10000099', jobNo: 'A2155', isPremium: false });
-  expect(result.costItems).toEqual([{ code: '931', name: 'Drywall Regular (Labor)', quantity: 2, estimated: 306.3, budget_name: 'Unknown Code' }]);
+  expect(result.costItems).toEqual([{ code: '931', name: 'Drywall Regular (Labor)', quantity: 2, estimated: 306.3, budget_name: 'Unknown Code' }, { code: '997', name: 'Parking (Other)', quantity: 1, estimated: 45, budget_name: 'Unknown Code' }]);
   expect(seen.find((s) => s.startsWith('SELECT code, name, quantity'))).toContain('WHERE tl.tag_id=10000099');
 });
 

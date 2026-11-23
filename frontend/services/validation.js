@@ -5,6 +5,9 @@ export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const SEND_REASONS = ['Not Onsite', 'Refused to Sign', 'Other'];
 export const DEFAULT_SEND_REASON = SEND_REASONS[0];
 
+/** The "Other" expense type takes a typed description (e.g. "Flat tire fix") instead of the type's name. */
+export const isOtherExpense = (type) => String(type || '').trim().toLowerCase() === 'other';
+
 export function submitProblems(tag) {
   const p = [];
   if (!tag.jobNo && !tag.jobName) p.push('Select a job on the Details tab');
@@ -15,6 +18,7 @@ export function submitProblems(tag) {
   if (labor.some((l) => !l.tradeId)) p.push('Every labor line needs a trade');
   if (materials.some((l) => !l.materialId) || equipment.some((l) => !l.equipmentId)) p.push('Every material and equipment line needs a description');
   if (expenses.some((l) => !l.expenseId || !(Number(l.amount) > 0))) p.push('Every expense needs a type and an amount');
+  if (expenses.some((l) => isOtherExpense(l.type) && !String(l.description || '').trim())) p.push('Describe each "Other" expense');
   return p;
 }
 
