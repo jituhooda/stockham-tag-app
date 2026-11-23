@@ -167,24 +167,24 @@ it('posts a send-for-signature body to the send endpoint', async () => {
 // Rates as in tag_labor_rates; the rows are what the cost-items query returns for a tag.
 const rates = rateTable([{ LaborType: 'NC_REG', Amount: '153.15' }, { LaborType: 'NC_OT', Amount: '208.33' }, { LaborType: 'NC_DT', Amount: '263.51' }, { LaborType: 'PT_OT', Amount: '55.18' }, { LaborType: 'PT_DT', Amount: '110.36' }]);
 const costRows = [
-  { code: '127', name: 'Haul Out / Dump Runs (Other)', quantity: '44.0' },
-  { code: '915', name: '6E (Rented Equipment)', quantity: '44.0' },
+  { code: '127', name: 'Haul Out / Dump Runs (Other)', quantity: '1.0', amount: '44.50' },
+  { code: '915', name: '6E (Rented Equipment)', quantity: '44.0', amount: '' },
   { code: '931', name: 'Drywall Doubletime (Labor)', quantity: '4.0' },
   { code: '931', name: 'Drywall Overtime (Labor)', quantity: '4.0' },
   { code: '931', name: 'Drywall Regular (Labor)', quantity: '44.0' },
   { code: '942', name: 'Taping: roll of tape : 4 (Material)', quantity: '4.0' },
 ];
 
-it('cost items, Extra Work: regular × NC_REG, overtime × NC_OT, double time × NC_DT, everything else 0', () => {
+it('cost items, Extra Work: regular × NC_REG, overtime × NC_OT, double time × NC_DT, materials and equipment 0, other expenses their amount', () => {
   expect(buildCostItems(costRows, false, rates).map((c) => [c.name, c.estimated])).toEqual([
-    ['Haul Out / Dump Runs (Other)', 0], ['6E (Rented Equipment)', 0], ['Drywall Doubletime (Labor)', 1054.04],
+    ['Haul Out / Dump Runs (Other)', 44.5], ['6E (Rented Equipment)', 0], ['Drywall Doubletime (Labor)', 1054.04],
     ['Drywall Overtime (Labor)', 833.32], ['Drywall Regular (Labor)', 6738.6], ['Taping: roll of tape : 4 (Material)', 0],
   ]);
 });
 
-it('cost items, OT - Premium Time Only: overtime × PT_OT, double time × PT_DT, regular and everything else 0', () => {
+it('cost items, OT - Premium Time Only: overtime × PT_OT, double time × PT_DT, regular, materials and equipment 0, other expenses their amount', () => {
   expect(buildCostItems(costRows, true, rates).map((c) => [c.name, c.estimated])).toEqual([
-    ['Haul Out / Dump Runs (Other)', 0], ['6E (Rented Equipment)', 0], ['Drywall Doubletime (Labor)', 441.44],
+    ['Haul Out / Dump Runs (Other)', 44.5], ['6E (Rented Equipment)', 0], ['Drywall Doubletime (Labor)', 441.44],
     ['Drywall Overtime (Labor)', 220.72], ['Drywall Regular (Labor)', 0], ['Taping: roll of tape : 4 (Material)', 0],
   ]);
 });

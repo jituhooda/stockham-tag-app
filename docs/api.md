@@ -187,10 +187,10 @@ When it reads the tag back, Submit also works out what the old Blockly app's `Lo
 - `cost_items`: `[{ "code", "name", "quantity", "estimated", "budget_name" }]` (numbers, not text; `budget_name` is the name for the budget line if Autodesk doesn't have the code yet, from the trade list, as Blockly's `GetTradeCodeName`), one per grouped line of the tag, from the
   `submitCostItems` query (same SQL as the Blockly one, without the change order id, which the service assigns): labor per trade
   (`<TradeCode>1`, "<Trade> Regular|Overtime|Doubletime (Labor)"), materials (`<TradeCode>2`), rented equipment (`915`) and other
-  expenses (`<CostCodeID>7`).
+  expenses (`<CostCodeID>7`, quantity 1, with the dollar amount as `amount`).
 - `estimated` = quantity × rate, with the rates read from `tag_labor_rates` (`laborRates` query):
   Extra Work: Regular × `NC_REG`, Overtime × `NC_OT`, Doubletime × `NC_DT`. Premium: Overtime × `PT_OT`, Doubletime × `PT_DT`, Regular 0.
-  Materials, equipment and other expenses are 0. If a labor rate that is needed is missing, Submit stops with an error.
+  Other expenses: their dollar amount. Materials and equipment are 0 (no prices in eMachine). If a labor rate that is needed is missing, Submit stops with an error.
 
 Both endpoints (`create-stockham-signed-doc` and `create-stockham-request-autodesk`) take the same two fields. When `cost_items` is present
 the service (`stockham-services`, `autodesk_cost.py`) creates the Autodesk change order (PCO), any missing budget lines and the cost items,

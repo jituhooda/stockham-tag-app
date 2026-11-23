@@ -48,8 +48,9 @@ export function tradeNameTable(rows) {
  * The Autodesk cost items (the old Blockly app's LoadCostItems): each grouped line from the tag with its estimated cost.
  *   Extra Work (not premium): "... Regular (Labor)" = qty × NC_REG, "... Overtime (Labor)" = qty × NC_OT, "... Doubletime (Labor)" = qty × NC_DT
  *   OT - Premium Time Only:   "... Overtime (Labor)" = qty × PT_OT, "... Doubletime (Labor)" = qty × PT_DT, anything else 0
- *   Materials, equipment and other expenses: estimated 0 (only the quantity goes to Autodesk).
- * `rows` are { code, name, quantity }; a labor rate that is needed but missing throws, so nothing is sent with a made-up cost.
+ *   Other expenses: quantity 1, estimated = the expense's dollar amount (`amount`).
+ *   Materials and equipment: estimated 0 (only the quantity goes to Autodesk).
+ * `rows` are { code, name, quantity, amount? }; a labor rate that is needed but missing throws, so nothing is sent with a made-up cost.
  */
 export function buildCostItems(rows, isPremium, rates, trades = {}) {
   const rateFor = (name) => {
@@ -61,8 +62,10 @@ export function buildCostItems(rows, isPremium, rates, trades = {}) {
   };
   return (rows || []).map((r) => {
     const quantity = Number(r.quantity) || 0;
+    const amount = r.amount == null || r.amount === '' ? null : Number(r.amount) || 0;
     return {
-      code: str(r.code), name: str(r.name), quantity, estimated: Math.round(quantity * rateFor(str(r.name)) * 100) / 100,
+      code: str(r.code), name: str(r.name), quantity,
+      estimated: Math.round((amount ?? quantity * rateFor(str(r.name))) * 100) / 100,
       budget_name: budgetName(str(r.code), trades),
     };
   });
