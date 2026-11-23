@@ -41,7 +41,7 @@ export function MenuDrawer({ open, onClose }) {
 
         <footer className="drawer__foot muted small">
           {!writesEnabled && <div>Saving to eMachine is off</div>}
-          {config.branding.companyName} · v{config.app.version}
+          {config.branding.companyName} Tag Mgmt · Version {config.app.version}
         </footer>
       </aside>
     </div>

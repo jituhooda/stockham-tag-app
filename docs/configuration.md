@@ -6,7 +6,7 @@ Everything is bundled into the web app at build time.
 
 | File | Contents |
 | --- | --- |
-| `app.config.json` | name, version, default divisions, editable statuses |
+| `app.config.json` | name, version (shown in the menu footer as "<companyName> Tag Mgmt · Version …"; bump it before each push), default divisions, editable statuses |
 | `branding.config.json` | company name, titles, colours |
 | `features.config.json` | switches; parts without a known eMachine API stay `false` |
 | `integrations.config.json` | eMachine paths, **all read queries**, and the fields each table write may send |
