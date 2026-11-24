@@ -76,5 +76,6 @@ export const apexConfig = {
     refreshToken: 'stockham.kcRefreshToken',
     lastEmail: 'stockham.lastEmail',
     loginState: 'stockham.kcLogin',
+    signedOut: 'stockham.signedOut',
   },
 };

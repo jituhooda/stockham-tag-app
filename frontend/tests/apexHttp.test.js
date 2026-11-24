@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import {
   ApiError, WritesDisabledError, encodeQuery, extractRows, insertedId, onUnauthorized, query, runWrites, sql, sqlInt,
-  sqlString, tokenClaims, writeRequest,
+  sqlString, tokenClaims, writeRequest, clearToken, getToken, setToken,
 } from '../lib/apexHttp';
+import { apexConfig } from '../lib/apexConfig';
 
 beforeEach(() => {
   globalThis.localStorage = { getItem: () => JSON.stringify('tok'), setItem() {}, removeItem() {} };
@@ -71,4 +72,22 @@ it('reads the user name from the token', () => {
   const token = `x.${b64({ payload: { name: 'Sean Hubert', employeeid: 'Sean' } })}.y`;
   expect(tokenClaims(token)).toMatchObject({ name: 'Sean Hubert', employeeid: 'Sean' });
   expect(tokenClaims('garbage')).toEqual({});
+});
+
+it('logout also stops the build-time token from signing the user back in, until they sign in again', () => {
+  const mem = {};
+  globalThis.localStorage = { getItem: (k) => mem[k] ?? null, setItem: (k, v) => { mem[k] = v; }, removeItem: (k) => { delete mem[k]; } };
+  const built = apexConfig.emachine.token;
+  apexConfig.emachine.token = 'build-tok';
+  try {
+    expect(getToken()).toBe('build-tok');
+    clearToken();
+    expect(getToken()).toBe('');
+    setToken('new-tok');
+    expect(getToken()).toBe('new-tok');
+    setToken('');
+    expect(getToken()).toBe('build-tok');
+  } finally {
+    apexConfig.emachine.token = built;
+  }
 });

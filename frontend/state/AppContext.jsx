@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { apexApi } from '../lib/apexApi';
 import { apexConfig } from '../lib/apexConfig';
-import { getToken, onUnauthorized, setToken, tokenClaims } from '../lib/apexHttp';
+import { clearToken, getToken, onUnauthorized, setToken, tokenClaims } from '../lib/apexHttp';
 import { forgetRefreshToken, getRefreshToken, logout } from '../lib/keycloak';
 import { storage } from '../lib/storage';
 
@@ -31,9 +31,9 @@ export function AppProvider({ children }) {
   /** Signs out here at once, then ends the Keycloak session; resolves when that has been tried. */
   const signOut = useCallback(async () => {
     const refreshToken = getRefreshToken();
-    setToken('');
+    clearToken();
     forgetRefreshToken();
-    setTokenState(getToken()); // a build-time token can't be signed out of
+    setTokenState(getToken());
     setSettings({ employee: '', employeeName: '', divisions: [] }); // the next person starts clean
     await logout(refreshToken);
   }, [setSettings]);
@@ -63,7 +63,6 @@ export function AppProvider({ children }) {
     () => ({
       config: apexConfig,
       signedIn: !!token,
-      canSignOut: !apexConfig.emachine.token || token !== apexConfig.emachine.token,
       user,
       signIn,
       signOut,

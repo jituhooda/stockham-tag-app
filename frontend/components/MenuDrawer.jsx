@@ -8,7 +8,7 @@ import { Logo } from './ui';
 const LOGOUT_URL = 'stockham://emachine.ai/';
 
 export function MenuDrawer({ open, onClose }) {
-  const { config, user, signOut, canSignOut, writesEnabled } = useApp();
+  const { config, user, signOut, writesEnabled } = useApp();
 
   useEffect(() => {
     if (!open) return undefined;
@@ -36,7 +36,7 @@ export function MenuDrawer({ open, onClose }) {
           <span className="drawer__avatar"><IconUser size={34} /></span>
           <strong className="drawer__user">{user.name}</strong>
           {user.email && <span className="drawer__email">{user.email}</span>}
-          {canSignOut && <button className="drawer__logout" onClick={logout}>Logout</button>}
+          <button className="drawer__logout" onClick={logout}>Logout</button>
         </section>
 
         <footer className="drawer__foot muted small">

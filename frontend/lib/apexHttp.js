@@ -33,10 +33,22 @@ export const onUnauthorized = (fn) => {
   return () => listeners.delete(fn);
 };
 
-/** Saved token (pasted, or from a #token= link) first; the build-time VITE_EMACHINE_TOKEN is only a fallback. */
-export const getToken = () => storage.get(apexConfig.storageKeys.token, '') || cfg.token;
-export const setToken = (token) =>
-  token ? storage.set(apexConfig.storageKeys.token, token) : storage.remove(apexConfig.storageKeys.token);
+/**
+ * Saved token (pasted, or from a #token= link) first; the build-time VITE_EMACHINE_TOKEN is only a fallback,
+ * and not after the user has logged out (until they sign in again).
+ */
+export const getToken = () =>
+  storage.get(apexConfig.storageKeys.token, '') || (storage.get(apexConfig.storageKeys.signedOut, false) ? '' : cfg.token);
+export const setToken = (token) => {
+  if (!token) return storage.remove(apexConfig.storageKeys.token);
+  storage.set(apexConfig.storageKeys.token, token);
+  storage.remove(apexConfig.storageKeys.signedOut);
+};
+/** Logout: forget the saved token and stop falling back to the build-time one. */
+export const clearToken = () => {
+  storage.remove(apexConfig.storageKeys.token);
+  storage.set(apexConfig.storageKeys.signedOut, true);
+};
 
 /** Base64 of UTF-8 text (btoa alone only handles Latin-1). */
 export function encodeQuery(sql) {
