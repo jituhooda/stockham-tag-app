@@ -34,7 +34,9 @@ export function DetailsTab({ tag, edit, save, readOnly, busy }) {
           <div className="nt__cols">
             <label className="nt__stack">
               <span className="nt__label">Date</span>
-              <input className="input" type="date" value={tag.tagDate || ''} disabled={readOnly} onChange={(e) => edit({ tagDate: e.target.value })} />
+              <input className="input" type="date" value={tag.tagDate || ''} disabled={readOnly}
+                onClick={(e) => { if (readOnly) return; try { e.currentTarget.showPicker?.(); } catch { /* picker not available */ } }}
+                onChange={(e) => edit({ tagDate: e.target.value })} />
             </label>
             <div className="nt__stack">
               <span className="nt__label">Created By</span>
