@@ -73,6 +73,89 @@ export function SafariMenuArt({ host }) {
   );
 }
 
+const ShareIcon = ({ cx, cy, stroke = '#1f2328' }) => (
+  <path d={`M${cx - 7} ${cy - 2}v10h14v-10M${cx} ${cy + 3}V${cy - 11}M${cx - 4} ${cy - 7}L${cx} ${cy - 11}L${cx + 4} ${cy - 7}`}
+    fill="none" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+);
+
+/** iPhone step 2 (newer Safari): ≡ at the left of the address bar opens a menu with Share. */
+export function SafariPageMenuArt({ host }) {
+  const rows = ['Translate', 'Share', 'Add to Bookmarks'];
+  return (
+    <Art>
+      <rect x="70" y="8" width="160" height="108" rx="12" fill="#fff" stroke="#cfd3d8" />
+      {rows.map((r, i) => {
+        const y = 16 + i * 32;
+        const hot = i === 1;
+        return (
+          <g key={r}>
+            {hot && <rect x="78" y={y} width="144" height="28" rx="8" fill="#fff4ea" stroke={HILITE} strokeWidth="3" />}
+            {hot ? <ShareIcon cx={94} cy={y + 15} /> : <rect x="87" y={y + 8} width="14" height="12" rx="3" fill="none" stroke="#1f2328" strokeWidth="1.5" />}
+            <Label x="110" y={y + 19} size={12} anchor="start" weight={hot ? 700 : 500}>{r}</Label>
+          </g>
+        );
+      })}
+      <circle cx="36" cy="146" r="15" fill="#fff" stroke="#cfd3d8" />
+      <Label x="36" y="151" size={14}>‹</Label>
+      <rect x="58" y="130" width="186" height="32" rx="16" fill="#555b66" />
+      {[139, 146, 153].map((y) => <rect key={y} x="72" y={y - 1} width="14" height="2" rx="1" fill="#fff" />)}
+      <Ring cx="79" cy="146" r="15" />
+      <Label x="160" y="151" fill="#fff" size={12}>{host}</Label>
+      <rect x="252" y="131" width="30" height="30" rx="15" fill="#fff" stroke="#cfd3d8" />
+      <rect x="260" y="139" width="12" height="12" rx="2" fill="none" stroke="#1f2328" strokeWidth="1.5" />
+    </Art>
+  );
+}
+
+/** iPhone step 2 (older Safari, or iPad): the Share icon in the toolbar. */
+export function SafariShareButtonArt({ host }) {
+  const icons = [50, 100, 150, 200, 250];
+  return (
+    <Art>
+      <rect x="40" y="12" width="220" height="30" rx="10" fill="#fff" stroke="#cfd3d8" />
+      <Label x="150" y="32" size={12}>{host}</Label>
+      <rect x="60" y="54" width="180" height="8" rx="4" fill="#e1e4e8" />
+      <rect x="60" y="72" width="140" height="8" rx="4" fill="#e1e4e8" />
+      <rect x="20" y="124" width="260" height="38" rx="10" fill="#fff" stroke="#cfd3d8" />
+      <Label x={icons[0]} y="149" size={18}>‹</Label>
+      <Label x={icons[1]} y="149" size={18} fill="#b5bac2">›</Label>
+      <ShareIcon cx={icons[2]} cy={145} />
+      <Ring cx={icons[2]} cy={143} r={17} />
+      <path d={`M${icons[3] - 8} 136v14c4-2 8-2 8 0c0-2 4-2 8 0v-14c-4-2-8-2-8 0c0-2-4-2-8 0z`} fill="none" stroke="#1f2328" strokeWidth="1.5" />
+      <rect x={icons[4] - 7} y="137" width="14" height="14" rx="3" fill="none" stroke="#1f2328" strokeWidth="1.5" />
+      <Label x="150" y="112" size={11} fill={HILITE} weight={700}>Tap Share</Label>
+    </Art>
+  );
+}
+
+/** iPhone step 3 (newer iOS): Add to Home Screen is a round button under the contacts and apps. */
+export function ShareSheetActionsArt() {
+  const actions = [['Copy'], ['Add to', 'Home Screen'], ['Add to', 'Bookmarks'], ['View', 'More']];
+  return (
+    <Art>
+      <rect x="20" y="8" width="260" height="156" rx="14" fill="#fff" stroke="#cfd3d8" />
+      <AppIcon x={36} y={20} size={32} />
+      <Label x="78" y="34" size={12} anchor="start" weight={700}>Stockham Tags</Label>
+      <rect x="78" y="42" width="110" height="6" rx="3" fill="#e1e4e8" />
+      {actions.map((lines, i) => {
+        const cx = 62 + i * 59;
+        const hot = i === 1;
+        return (
+          <g key={lines.join(' ')}>
+            <circle cx={cx} cy="88" r="20" fill="#f1f2f4" />
+            {i === 0 && <g fill="none" stroke="#1f2328" strokeWidth="1.5"><rect x={cx - 6} y="81" width="10" height="12" rx="2" /><rect x={cx - 2} y="85" width="10" height="12" rx="2" fill="#f1f2f4" /></g>}
+            {hot && <g fill="none" stroke="#1f2328" strokeWidth="1.6"><rect x={cx - 8} y="80" width="16" height="16" rx="4" /><path d={`M${cx} 84v8M${cx - 4} 88h8`} strokeLinecap="round" /></g>}
+            {i === 2 && <path d={`M${cx - 5} 80v16l5-4l5 4v-16z`} fill="none" stroke="#1f2328" strokeWidth="1.5" strokeLinejoin="round" />}
+            {i === 3 && <path d={`M${cx - 6} 91l6-6l6 6`} fill="none" stroke="#1f2328" strokeWidth="1.8" strokeLinecap="round" />}
+            {hot && <Ring cx={cx} cy={88} r={25} />}
+            {lines.map((t, j) => <Label key={t} x={cx} y={128 + j * 13} size={10} weight={hot ? 700 : 500}>{t}</Label>)}
+          </g>
+        );
+      })}
+    </Art>
+  );
+}
+
 /** iPhone step 3: Share sheet with "Add to Home Screen". */
 export function ShareSheetArt() {
   const rows = ['Copy', 'Add to Bookmarks', 'Add to Home Screen'];

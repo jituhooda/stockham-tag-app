@@ -4,7 +4,8 @@ import { OpenInChrome } from '../components/OpenInChrome';
 import { Logo } from '../components/ui';
 import { browser, isStandalone, platform } from '../lib/platform';
 import {
-  AndroidDialogArt, ChromeInstallItemArt, ChromeMenuArt, HomeScreenArt, IosAddDialogArt, OpenBrowserArt, SafariMenuArt, ShareSheetArt,
+  AndroidDialogArt, ChromeInstallItemArt, ChromeMenuArt, HomeScreenArt, IosAddDialogArt, OpenBrowserArt, SafariMenuArt, SafariPageMenuArt,
+  SafariShareButtonArt, ShareSheetActionsArt, ShareSheetArt,
 } from '../components/InstallArt';
 
 // VITE_PUBLIC_URL lets you show the right QR even when this page is opened on localhost.
@@ -33,21 +34,43 @@ function detectKey() {
 const steps = {
   'ios-safari': [
     { art: <OpenBrowserArt browser="safari" host={host} />, title: 'Open this page in Safari', text: 'Using WhatsApp, Messages or email? Tap the link, then choose Open in Safari (the compass icon). Installing only works from Safari.' },
-    { art: <SafariMenuArt host={host} />, title: 'Tap ••• and then Share', text: 'The ••• is at the bottom right of Safari. In the menu that opens, tap Share (the first item). Do not tap Add to Bookmarks. On older iPhones, tap the square with an arrow pointing up instead.' },
-    { art: <ShareSheetArt />, title: 'Scroll down and choose Add to Home Screen', text: 'It is in the list of actions below the apps row, so scroll down. If it is not there, scroll to the very bottom, tap Edit Actions, and add it.' },
-    { art: <IosAddDialogArt />, title: 'Keep “Open as Web App” on, tap Add', text: 'The switch makes it open full-screen like a normal app.' },
+    {
+      title: 'Open the Share menu',
+      text: 'Safari looks different depending on your iOS version and settings. Use whichever of these your screen shows. Do not tap Add to Bookmarks.',
+      variants: [
+        { label: '≡ at the left of the address bar', text: 'Tap ≡ next to the address, then tap Share.', art: <SafariPageMenuArt host={host} /> },
+        { label: '••• at the bottom right', text: 'Tap •••, then tap Share.', art: <SafariMenuArt host={host} /> },
+        { label: 'Share icon (square with an arrow)', text: 'Older iPhones and iPads: tap the Share icon in the bottom bar (top right on iPad).', art: <SafariShareButtonArt host={host} /> },
+      ],
+    },
+    {
+      title: 'Tap Add to Home Screen',
+      text: 'If you don’t see it, scroll down or tap View More. If it is still missing, scroll to the very bottom, tap Edit Actions, and add it.',
+      variants: [
+        { label: 'A round button under the apps row', text: 'Newer iOS: a row of round buttons (Copy, Add to Home Screen, Add to Bookmarks…).', art: <ShareSheetActionsArt /> },
+        { label: 'A row in the list of actions', text: 'Older iOS: scroll down the list below the apps.', art: <ShareSheetArt /> },
+      ],
+    },
+    { art: <IosAddDialogArt />, title: 'Tap Add', text: 'Add is at the top right. If you see an “Open as Web App” switch, keep it on so the app opens full-screen. Older iPhones don’t have the switch; just tap Add.' },
     { art: <HomeScreenArt />, title: 'Open it from your Home Screen', text: 'Tap the Stockham Tags icon. From now on, open the app from there, not from Safari.' },
   ],
   'ios-chrome': [
     { title: 'Tap the Share icon', text: 'In Chrome it is the square with an arrow at the right end of the address bar. Or tap ••• and then Share.' },
-    { art: <ShareSheetArt />, title: 'Scroll down and choose Add to Home Screen', text: 'It is in the list of actions, so scroll down. If it is not there, scroll to the very bottom, tap Edit Actions, and add it. Still missing? Use the Safari steps instead.' },
+    {
+      title: 'Tap Add to Home Screen',
+      text: 'If you don’t see it, scroll down or tap View More, or tap Edit Actions at the very bottom and add it. Still missing? Use the Safari steps instead (Chrome needs iOS 16.4 or newer).',
+      variants: [
+        { label: 'A round button under the apps row', art: <ShareSheetActionsArt /> },
+        { label: 'A row in the list of actions', art: <ShareSheetArt /> },
+      ],
+    },
     { title: 'Tap Add', text: 'If you see “Open as Web App”, keep it on.' },
     { art: <HomeScreenArt />, title: 'Open it from your Home Screen', text: 'Tap the Stockham Tags icon.' },
   ],
   'ios-other': [
     { copy: true, title: 'Copy this page’s address', text: 'This browser can’t add the app to your Home Screen, but Safari can.' },
     { art: <OpenBrowserArt browser="safari" host={host} />, title: 'Open Safari and paste the address', text: 'Open Safari (the blue compass), tap the address bar, paste, and go. This page will then show the Safari steps.' },
-    { title: 'In Safari: ••• then Share, then Add to Home Screen', text: 'Scroll down the list of actions to Add to Home Screen, then tap Add.' },
+    { title: 'In Safari: open Share, then Add to Home Screen', text: 'Share is under ≡ (left of the address), under ••• (bottom right), or the square-with-arrow icon on older iPhones. Then tap Add to Home Screen and Add.' },
     { art: <HomeScreenArt />, title: 'Open it from your Home Screen', text: 'Tap the Stockham Tags icon.' },
   ],
   'android-chrome': [
@@ -150,7 +173,7 @@ export function InstallPage() {
           ) : (mobile && tab === 'ios' && canShare && (
             <section className="install__card center install__quick">
               <button className="btn btn--dark btn--block" onClick={openShareSheet}>Add to Home Screen</button>
-              <p className="muted small">Tap the button. In the sheet that opens, scroll down the list of actions to <strong>Add to Home Screen</strong> (if it is missing, tap <strong>Edit Actions</strong> at the very bottom and add it), then tap <strong>Add</strong>.</p>
+              <p className="muted small">Tap the button. In the sheet that opens, tap <strong>Add to Home Screen</strong>: a round button under the apps on newer iPhones, or a row further down the list on older ones (tap <strong>View More</strong> or scroll if you don’t see it). Then tap <strong>Add</strong>.</p>
             </section>
           ))
         )}
@@ -190,6 +213,16 @@ export function InstallPage() {
                 <p className="muted">{s.text}</p>
                 {s.copy && <button className="btn btn--outline" onClick={copyLink}>{copied ? 'Link copied ✓' : 'Copy link'}</button>}
                 {s.art}
+                {s.variants && (
+                  <div className="install__variants">
+                    {s.variants.map((v, j) => (
+                      <figure key={v.label} className="install__variant">
+                        <figcaption><strong>{s.variants.length > 1 ? `${String.fromCharCode(65 + j)}. ` : ''}{v.label}</strong>{v.text && <span className="muted"> {v.text}</span>}</figcaption>
+                        {v.art}
+                      </figure>
+                    ))}
+                  </div>
+                )}
               </div>
             </li>
           ))}
@@ -200,7 +233,9 @@ export function InstallPage() {
           <ul>
             <li>Use the browser that came with the phone: <strong>Safari</strong> on iPhone, <strong>Chrome</strong> on Android. Browsers built into other apps (WhatsApp, Facebook, email, Teams…) can’t add the app. Copy the link and open it in Safari or Chrome.</li>
             <li>Look for the <strong>Share</strong> icon (a square with an arrow) or a menu (<strong>⋮</strong>, <strong>•••</strong> or <strong>≡</strong>). The option is called <strong>Add to Home Screen</strong> or <strong>Install app</strong>. Scroll the list if you don’t see it.</li>
-            <li>iPhone: if Add to Home Screen is missing from the Share sheet, scroll to the bottom, tap <strong>Edit Actions</strong>, and add it.</li>
+            <li>iPhone: Safari’s layout changes with the iOS version and with Settings › Apps › Safari (Tabs: Compact, Bottom or Top). Share may be under <strong>≡</strong> by the address, under <strong>•••</strong>, or a separate icon.</li>
+            <li>iPhone: if Add to Home Screen is missing from the Share sheet, tap <strong>View More</strong>, or scroll to the bottom, tap <strong>Edit Actions</strong>, and add it.</li>
+            <li>iPhone: the app needs iOS 16.4 or newer. Check in Settings › General › About › iOS Version.</li>
             <li>A phone managed by your company may block this. You can still use the app in the browser: just sign in at the same address and bookmark it.</li>
           </ul>
         </details>

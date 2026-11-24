@@ -409,6 +409,9 @@ html.install-page body { background: var(--slate); }
 .install__step-body h3 { margin: 3px 0 0; font-size: 17px; }
 .install__step-body p { margin: 0; font-size: 14px; line-height: 1.4; }
 .install__art { width: 100%; height: auto; max-width: 420px; margin-top: 4px; border-radius: 12px; }
+.install__variants { display: grid; gap: 12px; margin-top: 4px; }
+.install__variant { margin: 0; display: grid; gap: 4px; }
+.install__variant figcaption { font-size: 14px; line-height: 1.4; }
 
 /* Tablet: steps in two columns. */
 @media (min-width: 700px) {
