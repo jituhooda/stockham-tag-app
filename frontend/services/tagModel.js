@@ -23,6 +23,22 @@ export const today = () => {
 export const fixed = (n) => (n == null || n === '' ? '' : Number(n).toFixed(2));
 export const plain = (n) => (n == null || n === '' ? '' : String(Number(n)));
 
+/**
+ * The trade a labor line starts with for an employee's division:
+ * DW → Framing (Taping when they're a taper), DFH → DFH, ACT → ACT.
+ * Several divisions (e.g. "DFH','ACT") or an unknown one give '' so the user picks.
+ */
+export function tradeForDivision(division, taper) {
+  const d = String(division || '').trim().toUpperCase();
+  if (d === 'DW') return taper ? 'Taping' : 'Framing';
+  return d === 'DFH' || d === 'ACT' ? d : '';
+}
+
+/** The division shown under an employee's name: "DFH, ACT"; a DW taper shows as "Taper". */
+export const divisionLabel = (division, taper) =>
+  String(division || '').split(/'\s*,\s*'/).map((d) => d.trim()).filter(Boolean)
+    .map((d) => (taper && d.toUpperCase() === 'DW' ? 'Taper' : d)).join(', ');
+
 export const emptyLabor = () => ({ key: lineKey(), id: '', employeeId: '', employeeName: '', tradeId: '', trade: '', regular: '', overtime: '', doubleTime: '' });
 export const emptyMaterial = () => ({ key: lineKey(), id: '', materialId: '', description: '', qty: '', length: '' });
 export const emptyEquipment = () => ({ key: lineKey(), id: '', equipmentId: '', description: '', qty: '' });

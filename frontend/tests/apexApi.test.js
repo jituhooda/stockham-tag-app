@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { apexApi, expenseFromRow, insertFields, newTagRequest, headerFromRow, laborFromRow, materialFromRow, planSave } from '../lib/apexApi';
-import { emptyEquipment, emptyExpense, emptyLabor, emptyMaterial, newTag } from '../services/tagModel';
+import { emptyEquipment, emptyExpense, emptyLabor, emptyMaterial, divisionLabel, newTag, tradeForDivision } from '../services/tagModel';
 
 beforeEach(() => {
   globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
@@ -48,10 +48,14 @@ it('inserts new lines with tag_id and all fields (matches the captured labor ins
 
 it('lists employees by name and saves the row Id (not the employee number) as employee_id', async () => {
   globalThis.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { records: [
-    { Id: '10005792', Employee: 'A0K', EmployeeName: 'Adolfo Medina-Lopez', Status: 'Active Status', FEID: '2387', Division: 'DW' },
+    { Id: '10005792', Employee: 'A0K', EmployeeName: 'Adolfo Medina-Lopez', Status: 'Active Status', FEID: '2387', Division: 'DW', Taper: '1' },
+    { Id: '1', EmployeeName: 'No Division', Division: '' },
+    { Id: '2', EmployeeName: 'Has None', Division: "DW','NONE" },
   ] } })));
-  const [emp] = await apexApi.master.employees();
-  expect(emp).toMatchObject({ id: '10005792', name: 'Adolfo Medina-Lopez', employee: 'A0K' });
+  const list = await apexApi.master.employees();
+  expect(list).toHaveLength(1); // blank and NONE divisions are left out
+  const [emp] = list;
+  expect(emp).toMatchObject({ id: '10005792', name: 'Adolfo Medina-Lopez', employee: 'A0K', division: 'DW', taper: true });
 
   // What the Resource picker puts on the line: value = Id, label = name.
   const line = { ...emptyLabor(), employeeId: emp.id, employeeName: emp.name, tradeId: '10000337', regular: '8' };
@@ -161,4 +165,11 @@ it('switching a saved tag to OT - Premium Time Only saves IsPremium=1 (and back 
   expect(Object.fromEntries(new URLSearchParams(on.body))).toEqual({ Id: '10000113', IsPremium: '1' });
   const [off] = planSave(saved, { ...saved, isPremium: true });
   expect(Object.fromEntries(new URLSearchParams(off.body))).toEqual({ Id: '10000113', IsPremium: '0' });
+});
+
+it('picks the starting trade from the employee division', () => {
+  expect([['DW', false], ['DW', true], ['DFH', false], ['ACT', true], ["DFH','ACT", false], ['', false]].map(([d, t]) => tradeForDivision(d, t)))
+    .toEqual(['Framing', 'Taping', 'DFH', 'ACT', '', '']);
+  expect([['DW', false], ['DW', true], ["DFH','ACT','DW", true], ['ACT', true]].map(([d, t]) => divisionLabel(d, t)))
+    .toEqual(['DW', 'Taper', 'DFH, ACT, Taper', 'ACT']);
 });

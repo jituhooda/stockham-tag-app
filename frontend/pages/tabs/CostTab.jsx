@@ -8,7 +8,7 @@ import { WritesDisabledError } from '../../lib/apexHttp';
 import { ActionBar, ConfirmDialog, SaveButton, SearchSelect, cx, useToast } from '../../components/ui';
 import { useMasterData } from '../../hooks/useMasterData';
 import { tagPath } from '../../routes/router';
-import { emptyEquipment, emptyExpense, emptyLabor, emptyMaterial, isOtherExpense } from '../../services/tagModel';
+import { emptyEquipment, emptyExpense, emptyLabor, emptyMaterial, divisionLabel, isOtherExpense, tradeForDivision } from '../../services/tagModel';
 
 const SUBS = [
   { key: 'labor', label: 'Labor' },
@@ -157,7 +157,7 @@ function LaborSection(props) {
   const { lines, add, change, remove, confirm } = useLines(props, 'labor', emptyLabor);
 
   const employees = useMemo(
-    () => employeeList.data.map((e) => ({ value: e.id, label: e.name, sub: [e.employee, e.division].filter(Boolean).join(' · ') })),
+    () => employeeList.data.map((e) => ({ value: e.id, label: e.name, sub: divisionLabel(e.division, e.taper) })),
     [employeeList.data],
   );
   const trades = useOptions(tradeList.data);
@@ -184,7 +184,12 @@ function LaborSection(props) {
                 disabled={readOnly}
                 ariaLabel="Resource"
                 placeholder="Employee"
-                onChange={(o) => change(l.key, { employeeId: o.value, employeeName: o.label })}
+                onChange={(o) => {
+                  const emp = employeeList.data.find((e) => e.id === o.value);
+                  const name = emp && tradeForDivision(emp.division, emp.taper);
+                  const trade = name && tradeList.data.find((t) => t.label.toLowerCase() === name.toLowerCase());
+                  change(l.key, { employeeId: o.value, employeeName: o.label, ...(trade && { tradeId: String(trade.id), trade: trade.label }) });
+                }}
               />
             </label>
             <label className="field grow">

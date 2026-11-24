@@ -303,8 +303,9 @@ export const apexApi = {
   master: {
     employees: async () =>
       (await query('employees'))
-        .map((r) => ({ id: text(r, 'Id'), employee: text(r, 'Employee'), name: text(r, 'EmployeeName') || text(r, 'Employee'), division: text(r, 'Division') }))
-        .filter((e) => e.id)
+        .map((r) => ({ id: text(r, 'Id'), employee: text(r, 'Employee'), name: text(r, 'EmployeeName') || text(r, 'Employee'), division: text(r, 'Division'), taper: truthy(pick(r, 'Taper')) }))
+        // Only crew with a real division: skip blank ones and any containing NONE (e.g. "DW','NONE").
+        .filter((e) => e.id && e.division && !/none/i.test(e.division))
         .sort((a, b) => a.name.localeCompare(b.name)),
     // Keeps eMachine's order (Framing, Drywall, Taping, ACT, DFH).
     trades: async () => dedupe((await query('trades')).map((r) => ({ id: text(r, 'Id'), label: text(r, 'TradeName') || labelOf(r) }))),
