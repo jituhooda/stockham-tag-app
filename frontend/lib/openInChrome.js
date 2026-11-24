@@ -14,6 +14,12 @@ export function chromeUrl(href, plat = platform()) {
   return `${u.protocol === 'https:' ? 'googlechromes' : 'googlechrome'}://${u.host}${u.pathname}${u.search}${u.hash}`;
 }
 
+/** iPhone (iOS 17+): x-safari-https:// opens the page in Safari from an in-app browser. Older iOS ignores it. */
+export function safariUrl(href) {
+  const u = new URL(href);
+  return `x-safari-${u.protocol.replace(':', '')}://${u.host}${u.pathname}${u.search}${u.hash}`;
+}
+
 /** Phone browsers other than Chrome (and not the installed app), where "Open in Chrome" makes sense. */
 export const canOfferChrome = (nav = navigator, win = window) =>
   platform(nav) !== 'desktop' && browser(nav) !== 'chrome' && !isStandalone(nav, win);

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { OpenInChrome } from '../components/OpenInChrome';
 import { Logo } from '../components/ui';
-import { browser, isStandalone, platform } from '../lib/platform';
+import { installMode, installState, promptInstall, subscribeInstall } from '../lib/installPrompt';
+import { chromeUrl, safariUrl } from '../lib/openInChrome';
+import { browser, platform } from '../lib/platform';
 import {
   AndroidDialogArt, ChromeInstallItemArt, ChromeMenuArt, HomeScreenArt, IosAddDialogArt, OpenBrowserArt, SafariMenuArt, SafariPageMenuArt,
   SafariShareButtonArt, ShareSheetActionsArt, ShareSheetArt,
@@ -101,15 +103,46 @@ const steps = {
   ],
 };
 
-/** Public page (no sign-in): QR code, share link and illustrated install steps for iPhone and Android. */
+const quickSteps = {
+  'ios-share': [
+    { title: 'Tap Add to Home Screen', text: 'A round button under the apps on newer iPhones, or a row further down the list on older ones. Tap View More or scroll if you don’t see it.', art: <ShareSheetActionsArt /> },
+    { title: 'Tap Add', text: 'Top right. If you see “Open as Web App”, keep it on.', art: <IosAddDialogArt /> },
+  ],
+  'android-menu': [
+    { title: 'Tap the ⋮ menu', text: 'Top right of Chrome (≡ at the bottom in Samsung Internet).', art: <ChromeMenuArt host={host} /> },
+    { title: 'Tap Install app', text: 'Or Add to Home screen, then Install (or Add).', art: <ChromeInstallItemArt /> },
+  ],
+};
+
+function QuickSteps({ steps: list }) {
+  return (
+    <ol className="install__quick-steps">
+      {list.map((s, i) => (
+        <li key={s.title}>
+          <div className="install__num">{i + 1}</div>
+          <div className="install__step-body">
+            <h3>{s.title}</h3>
+            <p className="muted">{s.text}</p>
+            {s.art}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** Public page (no sign-in): one Install button for the detected phone, plus QR code and full illustrated steps. */
 export function InstallPage() {
   const [tab, setTab] = useState(detectPlatform);
   const [key, setKey] = useState(detectKey);
   const mobile = platform() !== 'desktop';
   const [qr, setQr] = useState('');
-  const [prompt, setPrompt] = useState(null);
   const [copied, setCopied] = useState(false);
-  const installed = isStandalone();
+  const [{ canPrompt, installed: justInstalled }, setInstall] = useState(installState);
+  const [shared, setShared] = useState(false);
+  const mode = installMode({ canPrompt, justInstalled });
+
+  useEffect(() => subscribeInstall(() => setInstall(installState())), []);
 
   useEffect(() => {
     document.documentElement.classList.add('install-page');
@@ -120,35 +153,77 @@ export function InstallPage() {
     QRCode.toDataURL(installUrl, { width: 360, margin: 1, color: { dark: '#24304f', light: '#ffffff' } }).then(setQr).catch(() => {});
   }, []);
 
-  // Chrome on Android can install straight from a button.
-  useEffect(() => {
-    const onPrompt = (e) => { e.preventDefault(); setPrompt(e); };
-    window.addEventListener('beforeinstallprompt', onPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
-  }, []);
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(installUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* ignore */ }
+  };
 
   const share = async () => {
     if (navigator.share) {
       try { await navigator.share({ title: 'Stockham Tags', text: 'Install the Stockham Tags app', url: installUrl }); return; } catch { /* cancelled */ }
     }
-    try { await navigator.clipboard.writeText(installUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* ignore */ }
+    copyLink();
   };
 
-  // iOS has no install prompt for web pages; this opens the Share sheet in one tap so the user only has to pick Add to Home Screen.
+  // iOS has no install API for web pages; this opens the Share sheet in one tap so the user only has to pick Add to Home Screen.
   const canShare = typeof navigator !== 'undefined' && !!navigator.share;
   const openShareSheet = async () => {
+    setShared(true);
     try { await navigator.share({ title: 'Stockham Tags', url: baseUrl }); } catch { /* cancelled */ }
   };
 
-  const copyLink = async () => {
-    try { await navigator.clipboard.writeText(installUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { /* ignore */ }
-  };
+  const here = typeof window === 'undefined' ? installUrl : window.location.href;
+  const openInBrowserHref = platform() === 'android' ? chromeUrl(here, 'android') : safariUrl(here);
 
-  const installNow = async () => {
-    prompt.prompt();
-    await prompt.userChoice;
-    setPrompt(null);
-  };
+  const hero = {
+    installed: (
+      <>
+        <h2>Installed ✓</h2>
+        <p className="muted">Open Stockham Tags from its icon on your Home Screen.</p>
+      </>
+    ),
+    prompt: (
+      <>
+        <button className="btn btn--dark btn--block btn--lg" onClick={promptInstall}>Install app</button>
+        <p className="muted small">Then tap <strong>Install</strong> in the box that pops up. That’s it.</p>
+      </>
+    ),
+    'android-menu': (
+      <>
+        <h2>Install in 2 taps</h2>
+        <QuickSteps steps={quickSteps['android-menu']} />
+      </>
+    ),
+    'open-browser': (
+      <>
+        <h2>First, open this page in {platform() === 'android' ? 'Chrome' : 'Safari'}</h2>
+        <p className="muted small">The browser inside WhatsApp, email and similar apps can’t add apps to your Home Screen.</p>
+        <a className="btn btn--dark btn--block btn--lg" href={openInBrowserHref}>Open in {platform() === 'android' ? 'Chrome' : 'Safari'}</a>
+        <p className="muted small">Nothing happens? Tap <strong>•••</strong> or <strong>⋮</strong> and choose <strong>Open in browser</strong>, or copy the link and paste it into {platform() === 'android' ? 'Chrome' : 'Safari'}.</p>
+        <button className="btn btn--outline btn--block" onClick={copyLink}>{copied ? 'Link copied ✓' : 'Copy link'}</button>
+      </>
+    ),
+    'ios-share': canShare ? (
+      <>
+        <button className="btn btn--dark btn--block btn--lg" onClick={openShareSheet}>Add to Home Screen</button>
+        <p className="muted small">{shared ? 'In the sheet that opened:' : 'Tap the button, then in the sheet that opens:'}</p>
+        <QuickSteps steps={quickSteps['ios-share']} />
+      </>
+    ) : (
+      <>
+        <h2>Add to your Home Screen</h2>
+        <p className="muted small">Follow the steps below.</p>
+      </>
+    ),
+    'ios-safari': (
+      <>
+        <h2>Open this page in Safari</h2>
+        <p className="muted small">This browser can’t add apps to your Home Screen, but Safari can.</p>
+        <a className="btn btn--dark btn--block btn--lg" href={safariUrl(here)}>Open in Safari</a>
+        <button className="btn btn--outline btn--block" onClick={copyLink}>{copied ? 'Link copied ✓' : 'Copy link'}</button>
+      </>
+    ),
+    desktop: null,
+  }[mode];
 
   return (
     <div className="install">
@@ -160,25 +235,9 @@ export function InstallPage() {
           <p className="muted">Add it to your phone’s Home Screen. No App Store needed.</p>
         </header>
 
-        {installed ? (
-          <section className="install__card center">
-            <h2>You’re already using the app ✓</h2>
-            {!mobile && <p className="muted">Share it with a teammate with the QR code or link below.</p>}
-          </section>
-        ) : (
-          prompt ? (
-            <section className="install__card center">
-              <button className="btn btn--dark btn--block" onClick={installNow}>Install app</button>
-            </section>
-          ) : (mobile && tab === 'ios' && canShare && (
-            <section className="install__card center install__quick">
-              <button className="btn btn--dark btn--block" onClick={openShareSheet}>Add to Home Screen</button>
-              <p className="muted small">Tap the button. In the sheet that opens, tap <strong>Add to Home Screen</strong>: a round button under the apps on newer iPhones, or a row further down the list on older ones (tap <strong>View More</strong> or scroll if you don’t see it). Then tap <strong>Add</strong>.</p>
-            </section>
-          ))
-        )}
+        {hero && <section className="install__card install__quick center">{hero}</section>}
 
-        {mobile && <OpenInChrome className="install__chrome center" />}
+        {mobile && mode !== 'installed' && mode !== 'open-browser' && <OpenInChrome className="install__chrome center" />}
 
         {!mobile && <section className="install__card install__share">
           {qr && <img className="install__qr" src={qr} alt={`QR code for ${installUrl}`} width="180" height="180" />}
@@ -192,6 +251,8 @@ export function InstallPage() {
         </aside>
 
         <main className="install__main">
+        <details className="install__all" open={!mobile || mode === 'ios-share' && !canShare}>
+        <summary>{mobile ? 'Show all steps for other phones and browsers' : 'Step-by-step instructions'}</summary>
         {!mobile && <div className="install__tabs" role="tablist" aria-label="Phone type">
           {[['ios', 'iPhone'], ['android', 'Android']].map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} className={tab === id ? 'is-active' : ''} onClick={() => { setTab(id); setKey(DEFAULT_KEY[id]); }}>{label}</button>
@@ -227,6 +288,7 @@ export function InstallPage() {
             </li>
           ))}
         </ol>
+        </details>
 
         <details className="install__help">
           <summary>Can’t find it? Tips that work on any phone</summary>

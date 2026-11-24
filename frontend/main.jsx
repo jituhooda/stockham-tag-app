@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import './assets/styles.css';
+import { captureInstallPrompt } from './lib/installPrompt';
 import { completeLogin, hasLoginResponse } from './lib/keycloak';
 import { openInChromeOnAndroid } from './lib/openInChrome';
 import { consumeUrlToken } from './lib/urlToken';
@@ -16,6 +17,9 @@ consumeUrlToken();
 window.addEventListener('hashchange', () => {
   if (consumeUrlToken()) window.location.reload();
 });
+
+// The install dialog event can fire before the /install page renders.
+captureInstallPrompt();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

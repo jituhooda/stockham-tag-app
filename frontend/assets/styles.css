@@ -390,6 +390,14 @@ html.install-page body { background: var(--slate); }
 .install__share { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; justify-content: center; }
 .install__quick { display: grid; gap: 10px; }
 .install__quick p { margin: 0; }
+.install__quick h2 { margin: 0; }
+.btn--lg { min-height: 56px; font-size: 18px; }
+.install__quick-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; text-align: left; }
+.install__quick-steps li { display: flex; gap: 12px; }
+.install__all { display: grid; gap: 12px; }
+.install__all > summary { font-weight: 600; font-size: 15px; cursor: pointer; color: var(--navy); background: #fff; border-radius: var(--radius); padding: 12px 16px; box-shadow: var(--shadow); }
+.install__all[open] > summary { margin-bottom: 12px; }
+.install__all > .install__browsers, .install__all > .install__tabs { margin-bottom: 12px; }
 .install__qr { border: 1px solid var(--line); border-radius: 10px; padding: 6px; background: #fff; }
 .install__share-text { display: grid; gap: 8px; flex: 1 1 200px; min-width: 0; }
 .install__link { display: block; padding: 8px 10px; background: var(--panel); border-radius: 8px; font-size: 13px; word-break: break-all; }
